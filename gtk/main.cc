@@ -8,6 +8,10 @@
 #include "Prefs.h"
 #include "Utils.h"
 
+#if GTKMM_CHECK_VERSION(4, 0, 0)
+#include "AdwCompat.h"
+#endif
+
 #include <libtransmission-app/app.h>
 
 #include <libtransmission/transmission.h>

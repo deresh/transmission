@@ -53,6 +53,7 @@ set(GIOMM_MINIMUM 2.26.0)
 set(GLIBMM_MINIMUM 2.60.0)
 set(GTKMM3_MINIMUM 3.24.0)
 set(GTKMM4_MINIMUM 4.11.1)
+set(ADW_MINIMUM 1.5)
 set(OPENSSL_MINIMUM 1.1.0)
 set(MBEDTLS_MINIMUM 2.7)
 set(MINIUPNPC_MINIMUM 2.2.1)
@@ -334,7 +335,8 @@ if(ENABLE_GTK)
         pkg_check_modules(GTK4
             gtkmm-4.0>=${GTKMM4_MINIMUM}
             glibmm-2.68>=${GLIBMM_MINIMUM}
-            giomm-2.68>=${GIOMM_MINIMUM})
+            giomm-2.68>=${GIOMM_MINIMUM}
+            libadwaita-1>=${ADW_MINIMUM})
         set(GTK_VERSION 4)
         set(GTK_FOUND ${GTK4_FOUND})
         set(GTKMM_MINIMUM ${GTKMM4_MINIMUM})
