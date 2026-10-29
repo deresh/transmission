@@ -14,7 +14,7 @@ inputs:
     required: false
     default: 'false'
   enable-gtk:
-    description: 'Install GTK dependencies (gtk3 or gtk4)'
+    description: 'Install GTK dependencies (gtk4)'
     required: false
     default: 'false'
   enable-qt:
@@ -162,20 +162,16 @@ runs:
       shell: bash
       run: |
         if [[ "$PKG_FAMILY" == "dnf" ]]; then
-          if [ '${{ inputs.enable-gtk }}' = 'gtk3' ]; then
-            dnf install -y 'pkgconfig(glibmm-2.4)' 'pkgconfig(gtkmm-3.0)'
-          elif [ '${{ inputs.enable-gtk }}' = 'gtk4' ]; then
-            dnf install -y 'pkgconfig(glibmm-2.68)' 'pkgconfig(gtkmm-4.0)'
+          if [ '${{ inputs.enable-gtk }}' = 'gtk4' ]; then
+            dnf install -y 'pkgconfig(glibmm-2.68)' 'pkgconfig(gtkmm-4.0)' 'pkgconfig(libadwaita-1)'
           fi
         elif [[ "$PKG_FAMILY" == "apt" ]]; then
           SUDO_CMD=""
           if [[ "${{ inputs.use-sudo }}" == "true" ]]; then
             SUDO_CMD="sudo"
           fi
-          if [ '${{ inputs.enable-gtk }}' = 'gtk3' ]; then
-            $SUDO_CMD apt-get install -y --no-install-recommends libgtkmm-3.0-dev
-          elif [ '${{ inputs.enable-gtk }}' = 'gtk4' ]; then
-            $SUDO_CMD apt-get install -y --no-install-recommends libgtkmm-4.0-dev
+          if [ '${{ inputs.enable-gtk }}' = 'gtk4' ]; then
+            $SUDO_CMD apt-get install -y --no-install-recommends libgtkmm-4.0-dev libadwaita-1-dev
           fi
         else
           echo "Unsupported package family: $PKG_FAMILY"
@@ -233,10 +229,8 @@ runs:
       if: env.OS_FAMILY == 'macos' && inputs.enable-gtk != 'false'
       shell: bash
       run: |
-        if [ '${{ inputs.enable-gtk }}' = 'gtk3' ]; then
-          brew install --formula gtkmm3
-        elif [ '${{ inputs.enable-gtk }}' = 'gtk4' ]; then
-          brew install --formula gtkmm4
+        if [ '${{ inputs.enable-gtk }}' = 'gtk4' ]; then
+          brew install --formula gtkmm4 libadwaita
         fi
 
     - name: Install macOS Qt dependencies
@@ -302,7 +296,7 @@ runs:
         # GTK versions (if enabled)
         if [[ "${{ inputs.enable-gtk }}" != "false" ]]; then
           echo "GTK:"
-          pkg-config --modversion gtk+-3.0 2>/dev/null && echo "GTK+3: $(pkg-config --modversion gtk+-3.0)" || echo "GTK+3: not found"
+          pkg-config --modversion libadwaita-1 2>/dev/null && echo "libadwaita: $(pkg-config --modversion libadwaita-1)" || echo "libadwaita: not found"
           pkg-config --modversion gtk4 2>/dev/null && echo "GTK4: $(pkg-config --modversion gtk4)" || echo "GTK4: not found"
           echo ""
         fi

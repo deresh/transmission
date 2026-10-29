@@ -875,7 +875,8 @@ jobs:
           # testing on an EOL release, while not needing periodic updates to the workflow.
           # Ref: https://wiki.debian.org/DebianReleases
           - version: oldstable
-            gtk: gtk3
+            # libadwaita 1.5 is not packaged in oldstable, so the GTK client is off here.
+            gtk: 'false'
             qt: qt5
           - version: stable
             gtk: gtk4

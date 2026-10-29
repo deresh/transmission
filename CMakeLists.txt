@@ -51,7 +51,6 @@ set(EVENT2_MINIMUM 2.1.0)
 set(FMT_MINIMUM 8.0.1)
 set(GIOMM_MINIMUM 2.26.0)
 set(GLIBMM_MINIMUM 2.60.0)
-set(GTKMM3_MINIMUM 3.24.0)
 set(GTKMM4_MINIMUM 4.11.1)
 set(ADW_MINIMUM 1.5)
 set(OPENSSL_MINIMUM 1.1.0)
@@ -96,12 +95,10 @@ tr_auto_option(USE_SYSTEM_UTP "Use system utp library" ${USE_SYSTEM_DEFAULT})
 tr_auto_option(USE_SYSTEM_WIDE_INTEGER "Use system WideInteger library" ${USE_SYSTEM_DEFAULT})
 tr_auto_option(USE_SYSTEM_B64 "Use system b64 library" ${USE_SYSTEM_DEFAULT})
 tr_auto_option(USE_SYSTEM_PSL "Use system psl library" ${USE_SYSTEM_DEFAULT})
-tr_list_option(USE_GTK_VERSION "Use specific GTK version" AUTO 3 4)
 tr_list_option(USE_QT_VERSION "Use specific Qt version" AUTO 5 6)
 tr_list_option(WITH_CRYPTO "Use specified crypto library" AUTO ccrypto mbedtls openssl wolfssl)
 tr_auto_option(WITH_INOTIFY "Enable inotify support (on systems that support it)" AUTO)
 tr_auto_option(WITH_KQUEUE "Enable kqueue support (on systems that support it)" AUTO)
-tr_auto_option(WITH_APPINDICATOR "Use appindicator for system tray icon in GTK client (GTK+ 3 only)" AUTO)
 tr_auto_option(WITH_SYSTEMD "Add support for systemd startup notification (on systems that support it)" AUTO)
 
 set(TR_NAME ${PROJECT_NAME})
@@ -331,42 +328,19 @@ endif()
 if(ENABLE_GTK)
     tr_get_required_flag(ENABLE_GTK GTK_IS_REQUIRED)
 
-    if(USE_GTK_VERSION STREQUAL "AUTO" OR USE_GTK_VERSION EQUAL 4)
-        pkg_check_modules(GTK4
-            gtkmm-4.0>=${GTKMM4_MINIMUM}
-            glibmm-2.68>=${GLIBMM_MINIMUM}
-            giomm-2.68>=${GIOMM_MINIMUM}
-            libadwaita-1>=${ADW_MINIMUM})
-        set(GTK_VERSION 4)
-        set(GTK_FOUND ${GTK4_FOUND})
-        set(GTKMM_MINIMUM ${GTKMM4_MINIMUM})
-    endif()
-
-    if(NOT GTK_FOUND AND (USE_GTK_VERSION STREQUAL "AUTO" OR USE_GTK_VERSION EQUAL 3))
-        pkg_check_modules(GTK3
-            gtkmm-3.0>=${GTKMM3_MINIMUM}
-            glibmm-2.4>=${GLIBMM_MINIMUM}
-            giomm-2.4>=${GIOMM_MINIMUM})
-        set(GTK_VERSION 3)
-        set(GTK_FOUND ${GTK3_FOUND})
-        set(GTKMM_MINIMUM ${GTKMM3_MINIMUM})
-    endif()
+    pkg_check_modules(GTK4
+        gtkmm-4.0>=${GTKMM4_MINIMUM}
+        glibmm-2.68>=${GLIBMM_MINIMUM}
+        giomm-2.68>=${GIOMM_MINIMUM}
+        libadwaita-1>=${ADW_MINIMUM})
+    set(GTK_FOUND ${GTK4_FOUND})
+    set(GTKMM_MINIMUM ${GTKMM4_MINIMUM})
 
     if(GTK_IS_REQUIRED AND NOT GTK_FOUND)
         message(FATAL_ERROR "GTK is required but wasn't found")
     endif()
 
     tr_fixup_auto_option(ENABLE_GTK GTK_FOUND GTK_IS_REQUIRED)
-
-    if(ENABLE_GTK AND WITH_APPINDICATOR AND GTK_VERSION EQUAL 3)
-        tr_get_required_flag(WITH_APPINDICATOR APPINDICATOR_IS_REQUIRED)
-        find_package(APPINDICATOR ${APPINDICATOR_IS_REQUIRED})
-        tr_fixup_auto_option(WITH_APPINDICATOR APPINDICATOR_FOUND APPINDICATOR_IS_REQUIRED)
-    else()
-        set(WITH_APPINDICATOR OFF)
-    endif()
-else()
-    set(WITH_APPINDICATOR OFF)
 endif()
 
 if(GTK_FOUND)
@@ -374,19 +348,19 @@ if(GTK_FOUND)
 
     target_compile_options(transmission::gtk_impl
         INTERFACE
-            ${GTK${GTK_VERSION}_CFLAGS_OTHER})
+            ${GTK4_CFLAGS_OTHER})
 
     target_include_directories(transmission::gtk_impl
         INTERFACE
-            ${GTK${GTK_VERSION}_INCLUDE_DIRS})
+            ${GTK4_INCLUDE_DIRS})
 
     target_link_directories(transmission::gtk_impl
         INTERFACE
-            ${GTK${GTK_VERSION}_LIBRARY_DIRS})
+            ${GTK4_LIBRARY_DIRS})
 
     target_link_libraries(transmission::gtk_impl
         INTERFACE
-            ${GTK${GTK_VERSION}_LIBRARIES})
+            ${GTK4_LIBRARIES})
 
     if(GTKMM_MINIMUM MATCHES "^([0-9]+)\.([0-9]+)\.")
         # GDK_VERSION_x_y is only defined for stable versions, i.e. even minor version numbers

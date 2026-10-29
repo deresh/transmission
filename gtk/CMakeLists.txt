@@ -64,37 +64,12 @@ target_sources(${TR_NAME}-gtk
         SystemTrayIcon.h
         Torrent.cc
         Torrent.h
-        TorrentCellRenderer.cc
-        TorrentCellRenderer.h
         TorrentFilter.cc
         TorrentFilter.h
         TorrentSorter.cc
         TorrentSorter.h
         Utils.cc
         Utils.h)
-
-tr_allow_compile_if(
-    [=[[GTK_VERSION EQUAL 3]]=]
-        TorrentCellRenderer.cc)
-
-target_sources(${TR_NAME}-gtk
-    PRIVATE
-        ui/gtk3/AddTrackerDialog.ui
-        ui/gtk3/DetailsDialog.ui
-        ui/gtk3/EditTrackersDialog.ui
-        ui/gtk3/FilterBar.ui
-        ui/gtk3/MainWindow.ui
-        ui/gtk3/MakeDialog.ui
-        ui/gtk3/MakeProgressDialog.ui
-        ui/gtk3/MessageLogWindow.ui
-        ui/gtk3/OptionsDialog.ui
-        ui/gtk3/PrefsDialog.ui
-        ui/gtk3/RelocateDialog.ui
-        ui/gtk3/StatsDialog.ui
-        ui/gtk3/TorrentUrlChooserDialog.ui)
-
-source_group(Ui/GTK3
-    REGULAR_EXPRESSION [[ui/gtk3/.*\.ui$]])
 
 target_sources(${TR_NAME}-gtk
     PRIVATE
@@ -117,26 +92,7 @@ target_sources(${TR_NAME}-gtk
 source_group(Ui/GTK4
     REGULAR_EXPRESSION [[ui/gtk4/.*\.ui$]])
 
-if(WITH_APPINDICATOR)
-    set_property(
-        SOURCE SystemTrayIcon.cc
-        APPEND
-        PROPERTY COMPILE_DEFINITIONS
-            HAVE_APPINDICATOR)
-    if(APPINDICATOR_IS_AYATANA)
-        set_property(
-            SOURCE SystemTrayIcon.cc
-            APPEND
-            PROPERTY COMPILE_DEFINITIONS
-                APPINDICATOR_IS_AYATANA)
-    endif()
-endif()
-
-if(GTK_VERSION EQUAL 4)
-    set(UI_SUBDIR ui/gtk4)
-else()
-    set(UI_SUBDIR ui/gtk3)
-endif()
+set(UI_SUBDIR ui/gtk4)
 
 tr_target_glib_resources(${TR_NAME}-gtk
     transmission.gresource.xml
@@ -175,17 +131,12 @@ target_include_directories(${TR_NAME}-gtk
     PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR})
 
-target_include_directories(${TR_NAME}-gtk SYSTEM
-    PRIVATE
-        $<$<BOOL:${WITH_APPINDICATOR}>:${APPINDICATOR_INCLUDE_DIRS}>)
-
 target_link_libraries(${TR_NAME}-gtk
     PRIVATE
         ${TR_NAME}-app
         ${TR_NAME}
         transmission::gtk_impl
-        transmission::fmt-header-only
-        $<$<BOOL:${WITH_APPINDICATOR}>:${APPINDICATOR_LIBRARIES}>)
+        transmission::fmt-header-only)
 
 if(MSVC)
     tr_append_target_property(${TR_NAME}-gtk LINK_FLAGS "/ENTRY:mainCRTStartup")
