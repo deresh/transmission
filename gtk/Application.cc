@@ -20,7 +20,6 @@
 #include "RelocateDialog.h"
 #include "Session.h"
 #include "StatsDialog.h"
-#include "SystemTrayIcon.h"
 #include "Torrent.h"
 #include "Utils.h"
 
@@ -218,7 +217,6 @@ private:
     sigc::connection timer_;
     sigc::connection update_model_soon_tag_;
     sigc::connection refresh_actions_tag_;
-    std::unique_ptr<SystemTrayIcon> icon_;
     std::unique_ptr<MainWindow> wind_;
     Glib::RefPtr<Session> core_;
     std::unique_ptr<MessageLogWindow> msgwin_;
@@ -750,9 +748,6 @@ void Application::Impl::app_setup()
     /* set up main window */
     main_window_setup();
 
-    /* set up the icon */
-    on_prefs_changed(TR_KEY_show_notification_area_icon);
-
     /* start model update timer */
     timer_ = Glib::signal_timeout().connect_seconds(
         sigc::mem_fun(*this, &Impl::update_model_loop),
@@ -767,7 +762,7 @@ void Application::Impl::app_setup()
     }
     else
     {
-        gtr_window_set_skip_taskbar_hint(*wind_, icon_ != nullptr);
+        gtr_window_set_skip_taskbar_hint(*wind_, false);
         gtr_action_set_toggled("toggle-main-window", false);
     }
 }
@@ -826,14 +821,7 @@ void Application::Impl::toggleMainWindow()
 
 bool Application::Impl::winclose()
 {
-    if (icon_ != nullptr)
-    {
-        gtr_action_activate("toggle-main-window");
-    }
-    else
-    {
-        on_app_exit();
-    }
+    on_app_exit();
 
     return true; /* don't propagate event further */
 }
@@ -936,8 +924,6 @@ bool Application::Impl::on_session_closed()
     wind_.reset();
 
     core_.reset();
-
-    icon_.reset();
 
     error_list_.clear();
     duplicates_list_.clear();
@@ -1154,17 +1140,6 @@ void Application::Impl::on_prefs_changed(tr_quark const key)
         tr_blocklistSetURL(tr, gtr_pref_string_get(key));
         break;
 
-    case TR_KEY_show_notification_area_icon:
-        if (bool const show = gtr_pref_get<bool>(key); show && icon_ == nullptr)
-        {
-            icon_ = SystemTrayIcon::create(*wind_, core_);
-        }
-        else if (!show && icon_ != nullptr)
-        {
-            icon_.reset();
-        }
-        break;
-
     case TR_KEY_speed_limit_down_enabled:
         tr_sessionLimitSpeed(tr, tr_direction::Down, gtr_pref_flag_get(key));
         break;
@@ -1347,12 +1322,6 @@ bool Application::Impl::update_model_once()
 
     /* update the actions */
     refresh_actions();
-
-    /* update the status tray icon */
-    if (icon_ != nullptr)
-    {
-        icon_->refresh();
-    }
 
     update_model_soon_tag_.disconnect();
     return false;

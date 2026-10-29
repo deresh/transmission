@@ -10,7 +10,6 @@
 #include "PathButton.h"
 #include "Prefs.h"
 #include "Session.h"
-#include "SystemTrayIcon.h"
 #include "Utils.h"
 
 #include <libtransmission/transmission.h>
@@ -509,14 +508,8 @@ DesktopPage::DesktopPage(
 {
     init_check_button("inhibit_hibernation_check", TR_KEY_inhibit_desktop_hibernation);
 
-    if (SystemTrayIcon::is_available())
-    {
-        init_check_button("show_systray_icon_check", TR_KEY_show_notification_area_icon);
-    }
-    else
-    {
-        get_widget<Gtk::CheckButton>("show_systray_icon_check")->hide();
-    }
+    /* no tray implementation yet: keep the option out of the dialog */
+    get_widget<Gtk::CheckButton>("show_systray_icon_check")->hide();
 
     init_check_button("notify_on_torrent_add_check", TR_KEY_torrent_added_notification_enabled);
     init_check_button("notify_on_torrent_finish_check", TR_KEY_torrent_complete_notification_enabled);

@@ -60,8 +60,6 @@ target_sources(${TR_NAME}-gtk
         SortListModel.hh
         StatsDialog.cc
         StatsDialog.h
-        SystemTrayIcon.cc
-        SystemTrayIcon.h
         Torrent.cc
         Torrent.h
         TorrentFilter.cc
