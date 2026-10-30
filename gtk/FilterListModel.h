@@ -8,13 +8,7 @@
 #include "GtkCompat.h"
 
 #include <giomm/listmodel.h>
-
-#if GTKMM_CHECK_VERSION(4, 0, 0)
 #include <gtkmm/filterlistmodel.h>
-#else
-#include <gtkmm/treemodel.h>
-#include <gtkmm/treemodelfilter.h>
-#endif
 
 template<typename ItemT>
 class FilterBase;
@@ -28,32 +22,10 @@ public:
 public:
     FilterListModel(Glib::RefPtr<Gio::ListModel> const& model, Glib::RefPtr<FilterType> const& filter);
 
-#if !GTKMM_CHECK_VERSION(4, 0, 0)
-    FilterListModel(Glib::RefPtr<Gtk::TreeModel> const& model, Glib::RefPtr<FilterType> const& filter);
-    ~FilterListModel() override;
-
-    FilterListModel(FilterListModel const&) = delete;
-    FilterListModel(FilterListModel&&) = delete;
-    FilterListModel& operator=(FilterListModel const&) = delete;
-    FilterListModel& operator=(FilterListModel&&) = delete;
-
-    guint get_n_items() const;
-
-    sigc::signal<void(guint, guint, guint)>& signal_items_changed();
-#endif
-
     template<typename ModelT>
     static Glib::RefPtr<FilterListModel<ItemT>> create(
         Glib::RefPtr<ModelT> const& model,
         Glib::RefPtr<FilterType> const& filter);
 
 private:
-#if !GTKMM_CHECK_VERSION(4, 0, 0)
-    bool matches_all_ = false;
-    bool matches_none_ = false;
-
-    sigc::signal<void(guint, guint, guint)> signal_items_changed_;
-
-    sigc::connection signal_changed_tag_;
-#endif
 };

@@ -14,10 +14,6 @@
 #include "Torrent.h"
 #include "Utils.h"
 
-#if !GTKMM_CHECK_VERSION(4, 0, 0)
-#include "TorrentCellRenderer.h"
-#endif
-
 #include <libtransmission-app/display-modes.h>
 
 #include <libtransmission/transmission.h>
@@ -37,25 +33,16 @@
 #include <glibmm/variant.h>
 #include <gtkmm/image.h>
 #include <gtkmm/label.h>
+#include <gtkmm/listitemfactory.h>
 #include <gtkmm/menubutton.h>
+#include <gtkmm/multiselection.h>
+#include <gtkmm/popovermenu.h>
 #include <gtkmm/scrolledwindow.h>
 #include <gtkmm/togglebutton.h>
 #include <gtkmm/treemodel.h>
 #include <gtkmm/treeview.h>
 #include <gtkmm/widget.h>
 #include <gtkmm/window.h>
-
-#if GTKMM_CHECK_VERSION(4, 0, 0)
-#include <gtkmm/listitemfactory.h>
-#include <gtkmm/multiselection.h>
-#include <gtkmm/popovermenu.h>
-#else
-#include <gdkmm/display.h>
-#include <gdkmm/window.h>
-#include <gtkmm/menu.h>
-#include <gtkmm/treeselection.h>
-#include <gtkmm/treeviewcolumn.h>
-#endif
 
 #include <array>
 #include <memory>
@@ -150,14 +137,9 @@ private:
     std::array<OptionMenuInfo, 2> speed_menu_info_;
     OptionMenuInfo ratio_menu_info_;
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     Glib::RefPtr<Gtk::ListItemFactory> item_factory_compact_;
     Glib::RefPtr<Gtk::ListItemFactory> item_factory_full_;
     Glib::RefPtr<Gtk::MultiSelection> selection_;
-#else
-    TorrentCellRenderer* renderer_ = nullptr;
-    Gtk::TreeViewColumn* column_ = nullptr;
-#endif
 
     Gtk::ScrolledWindow* scroll_ = nullptr;
     TorrentView* view_ = nullptr;
@@ -183,7 +165,6 @@ void MainWindow::Impl::on_popup_menu([[maybe_unused]] double event_x, [[maybe_un
     {
         auto const menu = gtr_action_get_object<Gio::Menu>("main-window-popup");
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
         popup_menu_ = Gtk::make_managed<Gtk::PopoverMenu>(menu, Gtk::PopoverMenu::Flags::NESTED);
         popup_menu_->set_parent(*view_);
         popup_menu_->set_has_arrow(false);
@@ -195,24 +176,14 @@ void MainWindow::Impl::on_popup_menu([[maybe_unused]] double event_x, [[maybe_un
                 popup_menu_->unparent();
                 popup_menu_ = nullptr;
             });
-#else
-        popup_menu_ = Gtk::make_managed<Gtk::Menu>(menu);
-        popup_menu_->attach_to_widget(window_);
-#endif
     }
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     popup_menu_->set_pointing_to({ static_cast<int>(event_x), static_cast<int>(event_y), 1, 1 });
     popup_menu_->popup();
-#else
-    popup_menu_->popup_at_pointer(nullptr);
-#endif
 }
 
 namespace
 {
-
-#if GTKMM_CHECK_VERSION(4, 0, 0)
 
 class GtrStrvBuilderDeleter
 {
@@ -242,27 +213,10 @@ GStrv gtr_strv_join(GObject* /*object*/, GStrv lhs, GStrv rhs)
     return g_strv_builder_end(builder.get());
 }
 
-#else
-
-bool tree_view_search_equal_func(
-    Glib::RefPtr<Gtk::TreeModel> const& /*model*/,
-    int /*column*/,
-    Glib::ustring const& key,
-    Gtk::TreeModel::const_iterator const& iter)
-{
-    static auto const& self_col = Torrent::get_columns().self;
-
-    auto const name = iter->get_value(self_col)->get_name_collated();
-    return name.find(key.lowercase()) == Glib::ustring::npos;
-}
-
-#endif
-
 } // namespace
 
 void MainWindow::Impl::init_view(TorrentView* view, Glib::RefPtr<FilterBar::Model> const& model)
 {
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     auto const create_builder_list_item_factory = [](std::string const& filename)
     {
         auto builder_scope = Glib::wrap(G_OBJECT(gtk_builder_cscope_new()));
@@ -284,26 +238,6 @@ void MainWindow::Impl::init_view(TorrentView* view, Glib::RefPtr<FilterBar::Mode
 
     view->set_factory(gtr_pref_flag_get(TR_KEY_compact_view) ? item_factory_compact_ : item_factory_full_);
     view->set_model(selection_);
-#else
-    static auto const& torrent_cols = Torrent::get_columns();
-
-    view->set_search_column(torrent_cols.name_collated);
-    view->set_search_equal_func(&tree_view_search_equal_func);
-
-    column_ = view->get_column(0);
-
-    renderer_ = Gtk::make_managed<TorrentCellRenderer>();
-    column_->pack_start(*renderer_, false);
-    column_->add_attribute(renderer_->property_torrent(), torrent_cols.self);
-
-    view->signal_popup_menu().connect_notify([this]() { on_popup_menu(0, 0); });
-    view->signal_row_activated().connect([](auto const& /*path*/, auto* /*column*/)
-                                         { gtr_action_activate("show-torrent-properties"); });
-
-    view->set_model(model);
-
-    view->get_selection()->signal_changed().connect([this]() { signal_selection_changed_.emit(); });
-#endif
 
     setup_item_view_button_event_handling(
         *view,
@@ -324,18 +258,7 @@ void MainWindow::Impl::prefsChanged(tr_quark const key)
     switch (key)
     {
     case TR_KEY_compact_view:
-#if GTKMM_CHECK_VERSION(4, 0, 0)
         view_->set_factory(gtr_pref_flag_get(key) ? item_factory_compact_ : item_factory_full_);
-#else
-        renderer_->property_compact() = gtr_pref_flag_get(key);
-        /* since the cell size has changed, we need gtktreeview to revalidate
-         * its fixed-height mode values. Unfortunately there's not an API call
-         * for that, but this seems to work */
-        view_->set_fixed_height_mode(false);
-        view_->set_row_separator_func({});
-        view_->unset_row_separator_func();
-        view_->set_fixed_height_mode(true);
-#endif
         break;
 
     case TR_KEY_show_statusbar:
@@ -677,9 +600,6 @@ MainWindow::Impl::Impl(
     /* make the window */
     window.set_title(Glib::get_application_name());
     window.set_default_size(gtr_pref_int_get<int>(TR_KEY_main_window_width), gtr_pref_int_get<int>(TR_KEY_main_window_height));
-#if !GTKMM_CHECK_VERSION(4, 0, 0)
-    window.move(gtr_pref_int_get<int>(TR_KEY_main_window_x), gtr_pref_int_get<int>(TR_KEY_main_window_y));
-#endif
 
     if (gtr_pref_flag_get(TR_KEY_main_window_is_maximized))
     {
@@ -695,7 +615,6 @@ MainWindow::Impl::Impl(
     /* gear */
     auto* gear_button = gtr_get_widget<Gtk::MenuButton>(builder, "gear_button");
     gear_button->set_menu_model(createOptionsMenu());
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     for (auto* child = gear_button->get_first_child(); child != nullptr; child = child->get_next_sibling())
     {
         if (auto* popover = dynamic_cast<Gtk::Popover*>(child); popover != nullptr)
@@ -704,9 +623,6 @@ MainWindow::Impl::Impl(
             break;
         }
     }
-#else
-    gear_button->signal_clicked().connect([this]() { onOptionsClicked(); }, false);
-#endif
 
     /* turtle */
     alt_speed_button_->signal_toggled().connect(sigc::mem_fun(*this, &Impl::alt_speed_toggled_cb));
@@ -746,16 +662,6 @@ MainWindow::Impl::Impl(
         { Glib::signal_idle().connect_once([this]() { onAltSpeedToggledIdle(); }); });
 
     refresh();
-
-#if !GTKMM_CHECK_VERSION(4, 0, 0)
-    /* prevent keyboard events being sent to the window first */
-    window.signal_key_press_event().connect(
-        [this](GdkEventKey* event) { return gtk_window_propagate_key_event(static_cast<Gtk::Window&>(window_).gobj(), event); },
-        false);
-    window.signal_key_release_event().connect(
-        [this](GdkEventKey* event) { return gtk_window_propagate_key_event(static_cast<Gtk::Window&>(window_).gobj(), event); },
-        false);
-#endif
 }
 
 namespace
@@ -837,7 +743,6 @@ bool MainWindow::for_each_selected_torrent_until(std::function<bool(Glib::RefPtr
     auto const model = selection->get_model();
     bool result = false;
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     auto const selected_items = selection->get_selection(); // TODO(C++20): Move into the `for`
     for (auto const position : *selected_items)
     {
@@ -847,20 +752,6 @@ bool MainWindow::for_each_selected_torrent_until(std::function<bool(Glib::RefPtr
             break;
         }
     }
-#else
-    static auto const& self_col = Torrent::get_columns().self;
-
-    for (auto const& path : selection->get_selected_rows())
-    {
-        auto const torrent = Glib::make_refptr_for_instance(model->get_iter(path)->get_value(self_col));
-        torrent->reference();
-        if (callback(torrent))
-        {
-            result = true;
-            break;
-        }
-    }
-#endif
 
     return result;
 }
@@ -879,15 +770,8 @@ void MainWindow::set_busy(bool isBusy)
 {
     if (get_realized())
     {
-#if GTKMM_CHECK_VERSION(4, 0, 0)
         auto const cursor = isBusy ? Gdk::Cursor::create(Glib::ustring("wait")) : Glib::RefPtr<Gdk::Cursor>();
         set_cursor(cursor);
-#else
-        auto const display = get_display();
-        auto const cursor = isBusy ? Gdk::Cursor::create(display, Gdk::WATCH) : Glib::RefPtr<Gdk::Cursor>();
-        get_window()->set_cursor(cursor);
-        display->flush();
-#endif
     }
 }
 

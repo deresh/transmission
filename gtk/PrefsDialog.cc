@@ -28,16 +28,13 @@
 #include <gtkmm/combobox.h>
 #include <gtkmm/editable.h>
 #include <gtkmm/entry.h>
+#include <gtkmm/eventcontrollerfocus.h>
 #include <gtkmm/label.h>
 #include <gtkmm/liststore.h>
 #include <gtkmm/spinbutton.h>
 #include <gtkmm/textview.h>
 #include <gtkmm/treemodelcolumn.h>
 #include <gtkmm/widget.h>
-
-#if GTKMM_CHECK_VERSION(4, 0, 0)
-#include <gtkmm/eventcontrollerfocus.h>
-#endif
 
 #include <fmt/format.h>
 
@@ -254,14 +251,9 @@ Gtk::TextView* PageBase::init_text_view(Glib::ustring const& name, tr_quark cons
         core_->set_pref(key, buffer->get_text());
     };
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     auto focus_controller = Gtk::EventControllerFocus::create();
     focus_controller->signal_leave().connect(save_buffer);
     view->add_controller(focus_controller);
-#else
-    view->add_events(Gdk::FOCUS_CHANGE_MASK);
-    view->signal_focus_out_event().connect_notify(sigc::hide<0>(save_buffer));
-#endif
 
     return view;
 }

@@ -11,14 +11,9 @@
 #include <glibmm/refptr.h>
 #include <glibmm/ustring.h>
 #include <gtkmm/builder.h>
+#include <gtkmm/button.h>
 #include <gtkmm/filechooser.h>
 #include <gtkmm/filefilter.h>
-
-#if GTKMM_CHECK_VERSION(4, 0, 0)
-#include <gtkmm/button.h>
-#else
-#include <gtkmm/filechooserbutton.h>
-#endif
 
 #include <list>
 #include <memory>
@@ -39,7 +34,6 @@ public:
 
     void set_shortcut_folders(std::list<std::string> const& value);
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     std::string get_filename() const;
     void set_filename(std::string const& value);
 
@@ -49,7 +43,6 @@ public:
     Glib::PropertyProxy<Glib::ustring> property_title();
 
     sigc::signal<void()>& signal_selection_changed();
-#endif
 
 private:
     class Impl;

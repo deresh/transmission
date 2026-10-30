@@ -27,19 +27,13 @@
 #include <glibmm/vectorutils.h>
 #include <gtkmm/adjustment.h>
 #include <gtkmm/checkbutton.h>
+#include <gtkmm/droptarget.h>
 #include <gtkmm/entry.h>
 #include <gtkmm/label.h>
 #include <gtkmm/progressbar.h>
 #include <gtkmm/scale.h>
 #include <gtkmm/textbuffer.h>
 #include <gtkmm/textview.h>
-
-#if GTKMM_CHECK_VERSION(4, 0, 0)
-#include <gtkmm/droptarget.h>
-#else
-#include <gdkmm/dragcontext.h>
-#include <gtkmm/selectiondata.h>
-#endif
 
 #include <fmt/format.h>
 
@@ -53,10 +47,8 @@
 using namespace std::literals;
 using namespace tr::Values;
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
 using FileListValue = Glib::Value<GSList*>;
 using FileListHandler = Glib::SListHandler<Glib::RefPtr<Gio::File>>;
-#endif
 
 namespace
 {
@@ -123,17 +115,7 @@ private:
     void onChooserChosen(PathButton* chooser);
     void onResponse(int response);
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     bool on_drag_data_received(Glib::ValueBase const& value, double x, double y);
-#else
-    void on_drag_data_received(
-        Glib::RefPtr<Gdk::DragContext> const& drag_context,
-        int x,
-        int y,
-        Gtk::SelectionData const& selection_data,
-        guint info,
-        guint time_);
-#endif
 
     bool set_dropped_source_path(std::string const& filename);
 
@@ -463,8 +445,6 @@ bool MakeDialog::Impl::set_dropped_source_path(std::string const& filename)
     return false;
 }
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
-
 bool MakeDialog::Impl::on_drag_data_received(Glib::ValueBase const& value, double /*x*/, double /*y*/)
 {
     if (G_VALUE_HOLDS(value.gobj(), GDK_TYPE_FILE_LIST))
@@ -480,28 +460,6 @@ bool MakeDialog::Impl::on_drag_data_received(Glib::ValueBase const& value, doubl
 
     return false;
 }
-
-#else
-
-void MakeDialog::Impl::on_drag_data_received(
-    Glib::RefPtr<Gdk::DragContext> const& drag_context,
-    int /*x*/,
-    int /*y*/,
-    Gtk::SelectionData const& selection_data,
-    guint /*info*/,
-    guint time_)
-{
-    bool success = false;
-
-    if (auto const uris = selection_data.get_uris(); !uris.empty())
-    {
-        success = set_dropped_source_path(Glib::filename_from_uri(uris.front()));
-    }
-
-    drag_context->drag_finish(success, false, time_);
-}
-
-#endif
 
 MakeDialog::MakeDialog(
     BaseObjectType* cast_item,
@@ -554,15 +512,9 @@ MakeDialog::Impl::Impl(MakeDialog& dialog, Glib::RefPtr<Gtk::Builder> const& bui
     piece_size_scale_->set_visible(false);
     piece_size_scale_->signal_value_changed().connect([this]() { onPieceSizeUpdated(); });
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     auto drop_controller = Gtk::DropTarget::create(GDK_TYPE_FILE_LIST, Gdk::DragAction::COPY);
     drop_controller->signal_drop().connect(sigc::mem_fun(*this, &Impl::on_drag_data_received), false);
     dialog_.add_controller(drop_controller);
-#else
-    dialog_.drag_dest_set(Gtk::DEST_DEFAULT_ALL, Gdk::ACTION_COPY);
-    dialog_.drag_dest_add_uri_targets();
-    dialog_.signal_drag_data_received().connect(sigc::mem_fun(*this, &Impl::on_drag_data_received));
-#endif
 }
 
 void MakeDialog::Impl::onPieceSizeUpdated()

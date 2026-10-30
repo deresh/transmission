@@ -38,17 +38,9 @@
      (PANGOMM_MAJOR_VERSION == (major) && PANGOMM_MINOR_VERSION == (minor) && PANGOMM_MICRO_VERSION >= (micro)))
 #endif
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
 #define IF_GTKMM4(ThenValue, ElseValue) ThenValue
-#else
-#define IF_GTKMM4(ThenValue, ElseValue) ElseValue
-#endif
 
-#if GLIBMM_CHECK_VERSION(2, 68, 0)
 #define IF_GLIBMM2_68(ThenValue, ElseValue) ThenValue
-#else
-#define IF_GLIBMM2_68(ThenValue, ElseValue) ElseValue
-#endif
 
 #if CAIROMM_CHECK_VERSION(1, 16, 0)
 #define IF_CAIROMM1_16(ThenValue, ElseValue) ThenValue
@@ -109,36 +101,5 @@
 
 namespace Glib
 {
-
-#if !GLIBMM_CHECK_VERSION(2, 68, 0)
-
-template<typename T>
-class RefPtr;
-
-template<typename T>
-inline bool operator==(RefPtr<T> const& lhs, std::nullptr_t /*rhs*/)
-{
-    return !lhs;
-}
-
-template<typename T>
-inline bool operator!=(RefPtr<T> const& lhs, std::nullptr_t /*rhs*/)
-{
-    return !(lhs == nullptr);
-}
-
-template<typename T>
-inline T& operator*(RefPtr<T> const& ptr)
-{
-    return *ptr.get();
-}
-
-template<typename T>
-inline RefPtr<T> make_refptr_for_instance(T* object)
-{
-    return RefPtr<T>(object);
-}
-
-#endif
 
 } // namespace Glib

@@ -44,26 +44,19 @@
 #include <gtkmm/builder.h>
 #include <gtkmm/button.h>
 #include <gtkmm/cssprovider.h>
+#include <gtkmm/droptarget.h>
+#include <gtkmm/eventcontrollerfocus.h>
 #include <gtkmm/grid.h>
 #include <gtkmm/icontheme.h>
 #include <gtkmm/image.h>
 #include <gtkmm/label.h>
 #include <gtkmm/messagedialog.h>
+#include <gtkmm/shortcutcontroller.h>
 #include <gtkmm/stylecontext.h>
 #include <gtkmm/window.h>
 
-#include <small/set.hpp>
-
-#if GTKMM_CHECK_VERSION(4, 0, 0)
-#include <gtkmm/droptarget.h>
-#include <gtkmm/eventcontrollerfocus.h>
-#include <gtkmm/shortcutcontroller.h>
-#else
-#include <gdkmm/dragcontext.h>
-#include <gtkmm/selectiondata.h>
-#endif
-
 #include <fmt/format.h>
+#include <small/set.hpp>
 
 #include <algorithm>
 #include <csignal>
@@ -87,12 +80,10 @@
 
 using namespace std::literals;
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
 using FileListValue = Glib::Value<GSList*>;
 using FileListHandler = Glib::SListHandler<Glib::RefPtr<Gio::File>>;
 
 using StringValue = Glib::Value<Glib::ustring>;
-#endif
 
 #define SHOW_LICENSE
 
@@ -153,17 +144,7 @@ private:
     void on_main_window_size_allocated();
     void on_main_window_focus_in();
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     bool on_drag_data_received(Glib::ValueBase const& value, double x, double y);
-#else
-    void on_drag_data_received(
-        Glib::RefPtr<Gdk::DragContext> const& drag_context,
-        gint x,
-        gint y,
-        Gtk::SelectionData const& selection_data,
-        guint info,
-        guint time_);
-#endif
 
     bool on_rpc_changed_idle(tr_rpc_callback_type type, std::optional<tr_torrent_id_t> tor_id);
 
@@ -411,32 +392,15 @@ void ensure_magnet_handler_exists()
 
 void Application::Impl::on_main_window_size_allocated()
 {
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     bool const is_maximized = wind_->is_maximized();
-#else
-    auto const gdk_window = wind_->get_window();
-    bool const is_maximized = gdk_window != nullptr && (gdk_window->get_state() & Gdk::WINDOW_STATE_MAXIMIZED) != 0;
-#endif
 
     gtr_pref_flag_set(TR_KEY_main_window_is_maximized, is_maximized);
 
     if (!is_maximized)
     {
-#if !GTKMM_CHECK_VERSION(4, 0, 0)
-        int x = 0;
-        int y = 0;
-        wind_->get_position(x, y);
-        gtr_pref_int_set(TR_KEY_main_window_x, x);
-        gtr_pref_int_set(TR_KEY_main_window_y, y);
-#endif
-
         int w = 0;
         int h = 0;
-#if GTKMM_CHECK_VERSION(4, 0, 0)
         wind_->get_default_size(w, h);
-#else
-        wind_->get_size(w, h);
-#endif
         gtr_pref_int_set(TR_KEY_main_window_width, w);
         gtr_pref_int_set(TR_KEY_main_window_height, h);
     }
@@ -618,19 +582,13 @@ void Application::Impl::on_startup()
     /* create main window now to be a parent to any error dialogs */
     wind_ = MainWindow::create(app_, actions, core_);
     wind_->set_show_menubar(true);
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     wind_->property_maximized().signal_changed().connect(sigc::mem_fun(*this, &Impl::on_main_window_size_allocated));
     wind_->property_default_width().signal_changed().connect(sigc::mem_fun(*this, &Impl::on_main_window_size_allocated));
     wind_->property_default_height().signal_changed().connect(sigc::mem_fun(*this, &Impl::on_main_window_size_allocated));
-#else
-    wind_->signal_size_allocate().connect(sigc::hide<0>(sigc::mem_fun(*this, &Impl::on_main_window_size_allocated)));
-#endif
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     auto const shortcut_controller = Gtk::ShortcutController::create(gtr_shortcuts_get_from_menu(main_menu));
     shortcut_controller->set_scope(Gtk::ShortcutScope::GLOBAL);
     wind_->add_controller(shortcut_controller);
-#endif
 
     app_.hold();
     app_setup();
@@ -769,12 +727,7 @@ void Application::Impl::app_setup()
 
 void Application::Impl::placeWindowFromPrefs()
 {
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     wind_->set_default_size(gtr_pref_int_get<int>(TR_KEY_main_window_width), gtr_pref_int_get<int>(TR_KEY_main_window_height));
-#else
-    wind_->resize(gtr_pref_int_get<int>(TR_KEY_main_window_width), gtr_pref_int_get<int>(TR_KEY_main_window_height));
-    wind_->move(gtr_pref_int_get<int>(TR_KEY_main_window_x), gtr_pref_int_get<int>(TR_KEY_main_window_y));
-#endif
 }
 
 void Application::Impl::presentMainWindow()
@@ -836,8 +789,6 @@ void Application::Impl::rowChangedCB(std::unordered_set<tr_torrent_id_t> const& 
     }
 }
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
-
 bool Application::Impl::on_drag_data_received(Glib::ValueBase const& value, double /*x*/, double /*y*/)
 {
     if (G_VALUE_HOLDS(value.gobj(), GDK_TYPE_FILE_LIST))
@@ -861,39 +812,6 @@ bool Application::Impl::on_drag_data_received(Glib::ValueBase const& value, doub
     return false;
 }
 
-#else
-
-void Application::Impl::on_drag_data_received(
-    Glib::RefPtr<Gdk::DragContext> const& drag_context,
-    gint /*x*/,
-    gint /*y*/,
-    Gtk::SelectionData const& selection_data,
-    guint /*info*/,
-    guint time_)
-{
-    if (auto const uris = selection_data.get_uris(); !uris.empty())
-    {
-        auto files = std::vector<Glib::RefPtr<Gio::File>>();
-        files.reserve(uris.size());
-        std::ranges::transform(uris, std::back_inserter(files), &Gio::File::create_for_uri);
-
-        open_files(files);
-    }
-    else
-    {
-        auto const text = gtr_str_strip(selection_data.get_text());
-
-        if (!text.empty())
-        {
-            core_->add_from_url(text);
-        }
-    }
-
-    drag_context->drag_finish(true, false, time_);
-}
-
-#endif
-
 void Application::Impl::main_window_setup()
 {
     wind_->signal_selection_changed().connect(sigc::mem_fun(*this, &Impl::refresh_actions_soon));
@@ -903,17 +821,10 @@ void Application::Impl::main_window_setup()
     refresh_actions();
 
     /* register to handle URIs that get dragged onto our main window */
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     auto drop_controller = Gtk::DropTarget::create(G_TYPE_INVALID, Gdk::DragAction::COPY);
     drop_controller->set_gtypes({ StringValue::value_type(), GDK_TYPE_FILE_LIST });
     drop_controller->signal_drop().connect(sigc::mem_fun(*this, &Impl::on_drag_data_received), false);
     wind_->add_controller(drop_controller);
-#else
-    wind_->drag_dest_set(Gtk::DEST_DEFAULT_ALL, Gdk::ACTION_COPY);
-    wind_->drag_dest_add_uri_targets();
-    wind_->drag_dest_add_text_targets(); /* links dragged from browsers are text */
-    wind_->signal_drag_data_received().connect(sigc::mem_fun(*this, &Impl::on_drag_data_received));
-#endif
 }
 
 bool Application::Impl::on_session_closed()
@@ -945,21 +856,13 @@ void Application::Impl::on_app_exit()
     update_model_soon_tag_.disconnect();
     timer_.disconnect();
 
-#if !GTKMM_CHECK_VERSION(4, 0, 0)
-    wind_->remove();
-#endif
-
     wind_->set_show_menubar(false);
 
     auto* p = Gtk::make_managed<Gtk::Grid>();
     p->set_column_spacing(GUI_PAD_BIG);
     p->set_halign(TR_GTK_ALIGN(CENTER));
     p->set_valign(TR_GTK_ALIGN(CENTER));
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     wind_->set_child(*p);
-#else
-    wind_->add(*p);
-#endif
 
     auto* icon = Gtk::make_managed<Gtk::Image>();
     icon->property_icon_name() = "network-workgroup";
@@ -984,9 +887,6 @@ void Application::Impl::on_app_exit()
     button->signal_clicked().connect([]() { ::exit(0); });
     p->attach(*button, 1, 2, 1, 1);
 
-#if !GTKMM_CHECK_VERSION(4, 0, 0)
-    p->show_all();
-#endif
     button->grab_focus();
 
     /* clear the UI */
@@ -1088,13 +988,9 @@ void Application::Impl::on_add_torrent(tr_ctor* ctor)
 
     gtr_window_on_close(*w, [w]() mutable { w.reset(); });
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     auto focus_controller = Gtk::EventControllerFocus::create();
     focus_controller->signal_enter().connect(sigc::mem_fun(*this, &Impl::on_main_window_focus_in));
     w->add_controller(focus_controller);
-#else
-    w->signal_focus_in_event().connect_notify(sigc::hide<0>(sigc::mem_fun(*this, &Impl::on_main_window_focus_in)));
-#endif
 
     if (wind_ != nullptr)
     {
@@ -1374,9 +1270,6 @@ void Application::Impl::show_about_dialog()
     d->set_transient_for(*wind_);
     d->set_modal(true);
     gtr_window_on_close(*d, [d]() mutable { d.reset(); });
-#if !GTKMM_CHECK_VERSION(4, 0, 0)
-    d->signal_response().connect_notify([&dref = *d](int /*response*/) { dref.close(); });
-#endif
     d->show();
 }
 

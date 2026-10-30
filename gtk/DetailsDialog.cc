@@ -2255,11 +2255,7 @@ AddTrackerDialog::AddTrackerDialog(
     set_transient_for(parent);
 
     auto* const accept = get_widget_for_response(TR_GTK_RESPONSE_TYPE(ACCEPT));
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     set_default_widget(*accept);
-#else
-    set_default(*accept);
-#endif
 
     gtr_paste_clipboard_url_into_entry(*url_entry_);
 }
@@ -2415,11 +2411,7 @@ void DetailsDialog::Impl::on_details_window_size_allocated()
 {
     int w = 0;
     int h = 0;
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     dialog_.get_default_size(w, h);
-#else
-    dialog_.get_size(w, h);
-#endif
     gtr_pref_int_set(TR_KEY_details_window_width, w);
     gtr_pref_int_set(TR_KEY_details_window_height, h);
 }
@@ -2491,14 +2483,9 @@ DetailsDialog::Impl::Impl(DetailsDialog& dialog, Glib::RefPtr<Gtk::Builder> cons
     /* return saved window size */
     auto const width = gtr_pref_int_get<int>(TR_KEY_details_window_width);
     auto const height = gtr_pref_int_get<int>(TR_KEY_details_window_height);
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     dialog_.set_default_size(width, height);
     dialog_.property_default_width().signal_changed().connect(sigc::mem_fun(*this, &Impl::on_details_window_size_allocated));
     dialog_.property_default_height().signal_changed().connect(sigc::mem_fun(*this, &Impl::on_details_window_size_allocated));
-#else
-    dialog_.resize(width, height);
-    dialog_.signal_size_allocate().connect(sigc::hide<0>(sigc::mem_fun(*this, &Impl::on_details_window_size_allocated)));
-#endif
 
     dialog_.signal_response().connect(sigc::hide<0>(sigc::mem_fun(dialog_, &DetailsDialog::close)));
 

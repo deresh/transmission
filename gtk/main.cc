@@ -2,15 +2,12 @@
 // It may be used under the MIT (SPDX: MIT) license.
 // License text can be found in the licenses/ folder.
 
+#include "AdwCompat.h"
 #include "Application.h"
 #include "GtkCompat.h"
 #include "Notify.h"
 #include "Prefs.h"
 #include "Utils.h"
-
-#if GTKMM_CHECK_VERSION(4, 0, 0)
-#include "AdwCompat.h"
-#endif
 
 #include <libtransmission-app/app.h>
 
@@ -113,9 +110,6 @@ int main(int argc, char** argv)
 
     Glib::OptionContext option_context(_("[torrent files or urls]"));
     option_context.set_main_group(main_group);
-#if !GTKMM_CHECK_VERSION(4, 0, 0)
-    Gtk::Main::add_gtk_option_group(option_context);
-#endif
     option_context.set_translation_domain(GETTEXT_PACKAGE);
 
     try

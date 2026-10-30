@@ -26,6 +26,7 @@
 #include <gtkmm/cellrenderertext.h>
 #include <gtkmm/combobox.h>
 #include <gtkmm/entry.h>
+#include <gtkmm/filterlistmodel.h>
 #include <gtkmm/label.h>
 #include <gtkmm/liststore.h>
 #include <gtkmm/treemodel.h>
@@ -33,10 +34,6 @@
 #include <gtkmm/treemodelfilter.h>
 #include <gtkmm/treerowreference.h>
 #include <gtkmm/treestore.h>
-
-#if GTKMM_CHECK_VERSION(4, 0, 0)
-#include <gtkmm/filterlistmodel.h>
-#endif
 
 #include <fmt/format.h>
 
@@ -733,11 +730,7 @@ FilterBar::Impl::Impl(FilterBar& widget, Glib::RefPtr<Session> const& core)
     tracker_->signal_changed().connect(sigc::mem_fun(*this, &Impl::update_filter_tracker));
     show_mode_->signal_changed().connect(sigc::mem_fun(*this, &Impl::update_filter_show_mode));
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     entry_->signal_icon_release().connect([this](auto /*icon_position*/) { entry_->set_text({}); });
-#else
-    entry_->signal_icon_release().connect([this](auto /*icon_position*/, auto const* /*event*/) { entry_->set_text({}); });
-#endif
     entry_->signal_changed().connect(sigc::mem_fun(*this, &Impl::update_filter_text));
 }
 

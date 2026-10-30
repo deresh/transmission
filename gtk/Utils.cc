@@ -19,6 +19,7 @@
 #include <libtransmission/version.h> /* SHORT_VERSION_STRING */
 #include <libtransmission/web-utils.h>
 
+#include <gdkmm/clipboard.h>
 #include <gdkmm/display.h>
 #include <giomm/appinfo.h>
 #include <giomm/asyncresult.h>
@@ -29,20 +30,13 @@
 #include <glibmm/quark.h>
 #include <glibmm/spawn.h>
 #include <gtkmm/cellrenderertext.h>
+#include <gtkmm/eventcontroller.h>
+#include <gtkmm/gesture.h>
+#include <gtkmm/gestureclick.h>
 #include <gtkmm/liststore.h>
 #include <gtkmm/messagedialog.h>
 #include <gtkmm/treemodel.h>
 #include <gtkmm/treemodelcolumn.h>
-
-#if GTKMM_CHECK_VERSION(4, 0, 0)
-#include <gdkmm/clipboard.h>
-#include <gtkmm/eventcontroller.h>
-#include <gtkmm/gesture.h>
-#include <gtkmm/gestureclick.h>
-#else
-#include <gdkmm/window.h>
-#include <gtkmm/clipboard.h>
-#endif
 
 #include <fmt/format.h>
 
@@ -328,8 +322,6 @@ bool on_item_view_button_pressed(
     return false;
 }
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
-
 namespace
 {
 
@@ -383,8 +375,6 @@ bool on_item_view_button_pressed(
     return false;
 }
 
-#endif
-
 /* if the user clicked in an empty area of the list,
  * clear all the selections. */
 bool on_item_view_button_released(Gtk::TreeView& view, double event_x, double event_y)
@@ -397,8 +387,6 @@ bool on_item_view_button_released(Gtk::TreeView& view, double event_x, double ev
     return false;
 }
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
-
 bool on_item_view_button_released(Gtk::ListView& view, double event_x, double event_y)
 {
     if (!get_position_from_allocation(view, event_x, event_y).has_value())
@@ -409,12 +397,8 @@ bool on_item_view_button_released(Gtk::ListView& view, double event_x, double ev
     return false;
 }
 
-#endif
-
 namespace
 {
-
-#if GTKMM_CHECK_VERSION(4, 0, 0)
 
 std::pair<int, int> convert_widget_to_bin_window_coords(Gtk::TreeView const& view, int view_x, int view_y)
 {
@@ -429,15 +413,12 @@ std::pair<int, int> convert_widget_to_bin_window_coords(Gtk::ListView const& /*v
     return { view_x, view_y };
 }
 
-#endif
-
 template<typename T>
 void setup_item_view_button_event_handling_impl(
     T& view,
     std::function<bool(guint, TrGdkModifierType, double, double, bool)> const& press_callback,
     std::function<bool(double, double)> const& release_callback)
 {
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     auto controller = Gtk::GestureClick::create();
     controller->set_button(0);
     controller->set_propagation_phase(Gtk::PropagationPhase::CAPTURE);
@@ -487,20 +468,6 @@ void setup_item_view_button_event_handling_impl(
             });
     }
     view.add_controller(controller);
-#else
-    if (press_callback)
-    {
-        view.signal_button_press_event().connect(
-            [press_callback](GdkEventButton* event)
-            { return press_callback(event->button, event->state, event->x, event->y, event->button == GDK_BUTTON_SECONDARY); },
-            false);
-    }
-    if (release_callback)
-    {
-        view.signal_button_release_event().connect([release_callback](GdkEventButton* event)
-                                                   { return release_callback(event->x, event->y); });
-    }
-#endif
 }
 
 } // namespace
@@ -513,8 +480,6 @@ void setup_item_view_button_event_handling(
     setup_item_view_button_event_handling_impl(view, press_callback, release_callback);
 }
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
-
 void setup_item_view_button_event_handling(
     Gtk::ListView& view,
     std::function<bool(guint, TrGdkModifierType, double, double, bool)> const& press_callback,
@@ -522,8 +487,6 @@ void setup_item_view_button_event_handling(
 {
     setup_item_view_button_event_handling_impl(view, press_callback, release_callback);
 }
-
-#endif
 
 bool gtr_file_trash_or_remove(std::string_view const filename, tr_error* error)
 {
@@ -788,13 +751,6 @@ void gtr_widget_set_visible(Gtk::Widget& widget, bool is_visible)
 
         for (auto* const top_level_window : Gtk::Window::list_toplevels())
         {
-#if !GTKMM_CHECK_VERSION(4, 0, 0)
-            if (top_level_window->get_window_type() != Gtk::WINDOW_TOPLEVEL)
-            {
-                continue;
-            }
-#endif
-
             if (top_level_window->get_transient_for() != window || top_level_window->get_visible() == is_visible)
             {
                 continue;
@@ -869,9 +825,6 @@ void gtr_window_set_urgency_hint([[maybe_unused]] Gtk::Window& window, [[maybe_u
 
 void gtr_window_raise([[maybe_unused]] Gtk::Window& window)
 {
-#if !GTKMM_CHECK_VERSION(4, 0, 0)
-    window.get_window()->raise();
-#endif
 }
 
 // ---
@@ -918,7 +871,6 @@ void gtr_paste_clipboard_url_into_entry(Gtk::Entry& entry)
         return false;
     };
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     auto const request = [](Glib::RefPtr<Gdk::Clipboard> const& clipboard, auto&& callback)
     {
         clipboard->read_text_async([clipboard, callback](Glib::RefPtr<Gio::AsyncResult>& result)
@@ -934,16 +886,6 @@ void gtr_paste_clipboard_url_into_entry(Gtk::Entry& entry)
                 request(Gdk::Display::get_default()->get_clipboard(), process);
             }
         });
-#else
-    for (auto const& str : { Gtk::Clipboard::get(GDK_SELECTION_PRIMARY)->wait_for_text(),
-                             Gtk::Clipboard::get(GDK_SELECTION_CLIPBOARD)->wait_for_text() })
-    {
-        if (process(str))
-        {
-            break;
-        }
-    }
-#endif
 }
 
 /***

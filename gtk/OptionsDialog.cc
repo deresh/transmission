@@ -412,11 +412,7 @@ TorrentUrlChooserDialog::TorrentUrlChooserDialog(
     auto* const accept = get_widget_for_response(TR_GTK_RESPONSE_TYPE(ACCEPT));
     gtr_paste_clipboard_url_into_entry(*e);
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     set_default_widget(*accept);
-#else
-    set_default(*accept);
-#endif
 
     signal_response().connect([this, e, core](int response) { onOpenURLResponse(response, *e, core); });
 }

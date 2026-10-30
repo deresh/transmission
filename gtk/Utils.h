@@ -18,13 +18,10 @@
 #include <gtkmm/combobox.h>
 #include <gtkmm/entry.h>
 #include <gtkmm/label.h>
+#include <gtkmm/listview.h>
 #include <gtkmm/treeview.h>
 #include <gtkmm/widget.h>
 #include <gtkmm/window.h>
-
-#if GTKMM_CHECK_VERSION(4, 0, 0)
-#include <gtkmm/listview.h>
-#endif
 
 #include <fmt/format.h>
 
@@ -137,20 +134,16 @@ bool on_item_view_button_pressed(
     double event_y,
     bool context_menu_requested,
     std::function<void(double, double)> const& callback = {});
-#if GTKMM_CHECK_VERSION(4, 0, 0)
 bool on_item_view_button_pressed(
     Gtk::ListView& view,
     double event_x,
     double event_y,
     bool context_menu_requested,
     std::function<void(double, double)> const& callback = {});
-#endif
 
 /* if the click didn't specify a row, clear the selection */
 bool on_item_view_button_released(Gtk::TreeView& view, double event_x, double event_y);
-#if GTKMM_CHECK_VERSION(4, 0, 0)
 bool on_item_view_button_released(Gtk::ListView& view, double event_x, double event_y);
-#endif
 
 using TrGdkModifierType = IF_GTKMM4(Gdk::ModifierType, guint);
 
@@ -158,12 +151,10 @@ void setup_item_view_button_event_handling(
     Gtk::TreeView& view,
     std::function<bool(guint, TrGdkModifierType, double, double, bool)> const& press_callback,
     std::function<bool(double, double)> const& release_callback);
-#if GTKMM_CHECK_VERSION(4, 0, 0)
 void setup_item_view_button_event_handling(
     Gtk::ListView& view,
     std::function<bool(guint, TrGdkModifierType, double, double, bool)> const& press_callback,
     std::function<bool(double, double)> const& release_callback);
-#endif
 
 /* move a file to the trashcan if GIO is available; otherwise, delete it */
 bool gtr_file_trash_or_remove(std::string_view filename, tr_error* error = nullptr);
@@ -198,21 +189,13 @@ void gtr_save_recent_dir(std::string const& pref, Glib::RefPtr<Session> const& c
 template<typename T, typename U>
 inline Glib::RefPtr<T> gtr_ptr_static_cast(Glib::RefPtr<U> const& ptr)
 {
-#if GLIBMM_CHECK_VERSION(2, 68, 0)
     return std::static_pointer_cast<T>(ptr);
-#else
-    return Glib::RefPtr<T>::cast_static(ptr);
-#endif
 }
 
 template<typename T, typename U>
 inline Glib::RefPtr<T> gtr_ptr_dynamic_cast(Glib::RefPtr<U> const& ptr)
 {
-#if GLIBMM_CHECK_VERSION(2, 68, 0)
     return std::dynamic_pointer_cast<T>(ptr);
-#else
-    return Glib::RefPtr<T>::cast_dynamic(ptr);
-#endif
 }
 
 template<>
@@ -237,25 +220,13 @@ struct fmt::formatter<Glib::ustring> : formatter<std::string>
 template<typename T>
 T* gtr_get_widget(Glib::RefPtr<Gtk::Builder> const& builder, Glib::ustring const& name)
 {
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     return builder->get_widget<T>(name);
-#else
-    T* widget = nullptr;
-    builder->get_widget(name, widget);
-    return widget;
-#endif
 }
 
 template<typename T, typename... ArgTs>
 T* gtr_get_widget_derived(Glib::RefPtr<Gtk::Builder> const& builder, Glib::ustring const& name, ArgTs&&... args)
 {
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     return Gtk::Builder::get_widget_derived<T>(builder, name, std::forward<ArgTs>(args)...);
-#else
-    T* widget = nullptr;
-    builder->get_widget_derived(name, widget, std::forward<ArgTs>(args)...);
-    return widget;
-#endif
 }
 
 template<typename F>
@@ -274,9 +245,5 @@ void gtr_window_on_close(Gtk::Window& widget, F&& callback)
         }
     };
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     widget.signal_close_request().connect(bool_callback, false);
-#else
-    widget.signal_delete_event().connect(sigc::hide<0>(bool_callback), false);
-#endif
 }

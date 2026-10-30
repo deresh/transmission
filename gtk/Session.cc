@@ -35,12 +35,7 @@
 #include <glibmm/miscutils.h>
 #include <glibmm/stringutils.h>
 #include <glibmm/variant.h>
-
-#if GTKMM_CHECK_VERSION(4, 0, 0)
 #include <gtkmm/sortlistmodel.h>
-#else
-#include <gtkmm/treemodelsort.h>
-#endif
 
 #include <fmt/format.h>
 

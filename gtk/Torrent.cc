@@ -353,8 +353,6 @@ void Torrent::Impl::notify_property_changes(ChangeFlags changes) const
         return;
     }
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
-
     static auto TR_CONSTEXPR23
         properties_flags = std::array<std::pair<Property, ChangeFlags>, PropertyStore::PropertyCount - 1>({ {
             { Property::ICON, ChangeFlag::MIME_TYPE },
@@ -383,13 +381,6 @@ void Torrent::Impl::notify_property_changes(ChangeFlags changes) const
             properties.notify_changed(torrent_, property);
         }
     }
-
-#else
-
-    // Reduce redraws by emitting non-detailed signal once for all changes
-    gtr_object_notify_emit(torrent_);
-
-#endif
 }
 
 void Torrent::Impl::get_value(int column, Glib::ValueBase& value) const

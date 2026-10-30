@@ -957,11 +957,7 @@ FileList::Impl::Impl(
         auto* icon_rend = Gtk::make_managed<Gtk::CellRendererPixbuf>();
         col->pack_start(*icon_rend, false);
         col->add_attribute(icon_rend->property_gicon(), file_cols.icon);
-#if GTKMM_CHECK_VERSION(4, 0, 0)
         icon_rend->property_icon_size() = Gtk::IconSize::NORMAL;
-#else
-        icon_rend->property_stock_size() = Gtk::ICON_SIZE_MENU;
-#endif
         /* add text renderer */
         auto* text_rend = Gtk::make_managed<Gtk::CellRendererText>();
         text_rend->property_editable() = true;

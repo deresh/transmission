@@ -12,26 +12,22 @@
 
 #include <libtransmission/quark.h>
 
-#include <giomm/simpleaction.h>
-#include <glibmm/i18n.h>
-#include <glibmm/variant.h>
-
-#include <array>
-#include <string>
-#include <string_view>
-#include <unordered_map>
-
-#if GTKMM_CHECK_VERSION(4, 0, 0)
 #include <giomm/liststore.h>
 #include <giomm/menuattributeiter.h>
 #include <giomm/menulinkiter.h>
+#include <giomm/simpleaction.h>
+#include <glibmm/i18n.h>
+#include <glibmm/variant.h>
 #include <gtkmm/shortcut.h>
 #include <gtkmm/shortcutaction.h>
 #include <gtkmm/shortcuttrigger.h>
 
+#include <array>
 #include <stack>
+#include <string>
+#include <string_view>
+#include <unordered_map>
 #include <utility>
-#endif
 
 using namespace std::string_view_literals;
 
@@ -203,8 +199,6 @@ Glib::RefPtr<Glib::Object> gtr_action_get_object(Glib::ustring const& name)
     return myBuilder->get_object(name);
 }
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
-
 Glib::RefPtr<Gio::ListModel> gtr_shortcuts_get_from_menu(Glib::RefPtr<Gio::MenuModel> const& menu)
 {
     auto result = Gio::ListStore<Gtk::Shortcut>::create();
@@ -251,5 +245,3 @@ Glib::RefPtr<Gio::ListModel> gtr_shortcuts_get_from_menu(Glib::RefPtr<Gio::MenuM
 
     return result;
 }
-
-#endif

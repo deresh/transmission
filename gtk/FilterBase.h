@@ -7,29 +7,13 @@
 
 #include "GtkCompat.h"
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
 #include <gtkmm/filter.h>
-#else
-#include <glibmm/object.h>
-#endif
 
 #include <cstdint>
 
 template<typename T>
 class FilterBase : public IF_GTKMM4(Gtk::Filter, Glib::Object)
 {
-#if !GTKMM_CHECK_VERSION(4, 0, 0)
-public:
-    // clang-format off
-    enum class Change : uint8_t
-    {
-        DIFFERENT,
-        LESS_STRICT,
-        MORE_STRICT,
-    };
-    // clang-format on
-#endif
-
 public:
     FilterBase() = default;
     FilterBase(FilterBase&&) = delete;
@@ -43,21 +27,10 @@ public:
     virtual bool matches_all() const;
     virtual bool matches_none() const;
 
-#if !GTKMM_CHECK_VERSION(4, 0, 0)
-    sigc::signal<void(Change)>& signal_changed();
-#endif
-
 protected:
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     // Gtk::Filter
     bool match_vfunc(Glib::RefPtr<Glib::ObjectBase> const& object) override;
     Match get_strictness_vfunc() override;
-#else
-    void changed(Change change);
-#endif
 
 private:
-#if !GTKMM_CHECK_VERSION(4, 0, 0)
-    sigc::signal<void(Change)> signal_changed_;
-#endif
 };

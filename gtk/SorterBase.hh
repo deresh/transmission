@@ -7,8 +7,6 @@
 
 #include "SorterBase.h"
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
-
 template<typename T>
 Gtk::Ordering SorterBase<T>::compare_vfunc(gpointer lhs, gpointer rhs)
 {
@@ -31,19 +29,3 @@ Gtk::Sorter::Order SorterBase<T>::get_order_vfunc()
 {
     return Gtk::Sorter::Order::PARTIAL;
 }
-
-#else
-
-template<typename T>
-sigc::signal<void(typename SorterBase<T>::Change)>& SorterBase<T>::signal_changed()
-{
-    return signal_changed_;
-}
-
-template<typename T>
-void SorterBase<T>::changed(Change change)
-{
-    signal_changed_.emit(change);
-}
-
-#endif

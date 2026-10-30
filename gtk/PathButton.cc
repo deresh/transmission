@@ -9,17 +9,15 @@
 #include "Utils.h"
 
 #include <giomm/file.h>
-#include <glibmm/i18n.h>
-#include <gtkmm/box.h>
-#if GTKMM_CHECK_VERSION(4, 0, 0)
 #include <glibmm/error.h>
+#include <glibmm/i18n.h>
 #include <glibmm/property.h>
+#include <gtkmm/box.h>
 #include <gtkmm/dialog.h>
 #include <gtkmm/filechoosernative.h>
 #include <gtkmm/image.h>
 #include <gtkmm/label.h>
 #include <gtkmm/separator.h>
-#endif
 
 #include <vector>
 
@@ -33,7 +31,6 @@ public:
     Impl& operator=(Impl const&) = delete;
     ~Impl() = default;
 
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     std::string const& get_filename() const;
     void set_filename(std::string const& value);
 
@@ -45,18 +42,14 @@ public:
     Glib::Property<Glib::ustring>& property_title();
 
     sigc::signal<void()>& signal_selection_changed();
-#endif
 
 private:
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     void show_dialog();
 
     void update();
     void update_mode();
-#endif
 
 private:
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     PathButton& widget_;
 
     Glib::Property<Gtk::FileChooser::Action> action_;
@@ -71,20 +64,16 @@ private:
     std::string current_file_;
     std::list<std::string> shortcut_folders_;
     std::vector<Glib::RefPtr<Gtk::FileFilter>> filters_;
-#endif
 };
 
 PathButton::Impl::Impl([[maybe_unused]] PathButton& widget)
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     : widget_(widget)
     , action_(widget, "action", Gtk::FileChooser::Action::OPEN)
     , title_(widget, "title", {})
     , image_(Gtk::make_managed<Gtk::Image>())
     , label_(Gtk::make_managed<Gtk::Label>())
     , mode_(Gtk::make_managed<Gtk::Image>())
-#endif
 {
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     action_.get_proxy().signal_changed().connect([this]() { update_mode(); });
 
     label_->set_ellipsize(Pango::EllipsizeMode::END);
@@ -102,10 +91,7 @@ PathButton::Impl::Impl([[maybe_unused]] PathButton& widget)
 
     update();
     update_mode();
-#endif
 }
-
-#if GTKMM_CHECK_VERSION(4, 0, 0)
 
 std::string const& PathButton::Impl::get_filename() const
 {
@@ -219,8 +205,6 @@ void PathButton::Impl::update_mode()
         action_.get_value() == Gtk::FileChooser::Action::SELECT_FOLDER ? "folder-open-symbolic" : "document-open-symbolic");
 }
 
-#endif
-
 PathButton::PathButton()
     : Glib::ObjectBase(typeid(PathButton))
     , impl_(std::make_unique<Impl>(*this))
@@ -238,18 +222,8 @@ PathButton::~PathButton() = default;
 
 void PathButton::set_shortcut_folders(std::list<std::string> const& value)
 {
-#if GTKMM_CHECK_VERSION(4, 0, 0)
     impl_->set_shortcut_folders(value);
-#else
-    for (auto const& folder : value)
-    {
-        remove_shortcut_folder(folder);
-        add_shortcut_folder(folder);
-    }
-#endif
 }
-
-#if GTKMM_CHECK_VERSION(4, 0, 0)
 
 std::string PathButton::get_filename() const
 {
@@ -280,5 +254,3 @@ sigc::signal<void()>& PathButton::signal_selection_changed()
 {
     return impl_->signal_selection_changed();
 }
-
-#endif
