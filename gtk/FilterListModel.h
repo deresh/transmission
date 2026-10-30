@@ -14,7 +14,7 @@ template<typename ItemT>
 class FilterBase;
 
 template<typename ItemT>
-class FilterListModel : public IF_GTKMM4(Gtk::FilterListModel, Gtk::TreeModelFilter)
+class FilterListModel : public Gtk::FilterListModel
 {
 public:
     using FilterType = FilterBase<ItemT>;

@@ -52,7 +52,7 @@ public:
         NUM_PORT_TEST_IP_PROTOCOL // Must always be the last value
     };
 
-    using Model = IF_GTKMM4(Gio::ListModel, Gtk::TreeModel);
+    using Model = Gio::ListModel;
 
 public:
     ~Session() override;

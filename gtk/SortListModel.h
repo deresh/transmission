@@ -14,7 +14,7 @@ template<typename ItemT>
 class SorterBase;
 
 template<typename ItemT>
-class SortListModel : public IF_GTKMM4(Gtk::SortListModel, Gtk::TreeModelSort)
+class SortListModel : public Gtk::SortListModel
 {
 public:
     using SorterType = SorterBase<ItemT>;

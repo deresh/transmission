@@ -320,11 +320,11 @@ void TorrentFileChooserDialog::onOpenDialogResponse(int response, Glib::RefPtr<S
         bool const do_prompt = get_choice(std::string(ShowOptionsDialogChoice)) == "true";
         bool const do_notify = false;
 
-        auto const files = IF_GTKMM4(get_files2, get_files)();
+        auto const files = get_files2();
         g_assert(!files.empty());
 
         /* remember this folder the next time we use this dialog */
-        if (auto const folder = IF_GTKMM4(get_current_folder, get_current_folder_file)(); folder != nullptr)
+        if (auto const folder = get_current_folder(); folder != nullptr)
         {
             gtr_pref_string_set(TR_KEY_open_dialog_dir, folder->get_path());
         }
@@ -355,7 +355,7 @@ TorrentFileChooserDialog::TorrentFileChooserDialog(Gtk::Window& parent, Glib::Re
 
     if (auto const folder = gtr_pref_string_get(TR_KEY_open_dialog_dir); !folder.empty())
     {
-        IF_GTKMM4(set_current_folder, set_current_folder_file)(Gio::File::create_for_path(folder));
+        set_current_folder(Gio::File::create_for_path(folder));
     }
 
     add_choice(std::string(ShowOptionsDialogChoice), _("Show options dialog"));

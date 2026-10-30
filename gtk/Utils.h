@@ -145,7 +145,7 @@ bool on_item_view_button_pressed(
 bool on_item_view_button_released(Gtk::TreeView& view, double event_x, double event_y);
 bool on_item_view_button_released(Gtk::ListView& view, double event_x, double event_y);
 
-using TrGdkModifierType = IF_GTKMM4(Gdk::ModifierType, guint);
+using TrGdkModifierType = Gdk::ModifierType;
 
 void setup_item_view_button_event_handling(
     Gtk::TreeView& view,

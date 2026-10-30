@@ -12,7 +12,7 @@
 #include <cstdint>
 
 template<typename T>
-class FilterBase : public IF_GTKMM4(Gtk::Filter, Glib::Object)
+class FilterBase : public Gtk::Filter
 {
 public:
     FilterBase() = default;

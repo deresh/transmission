@@ -10,7 +10,7 @@
 #include <gtkmm/sorter.h>
 
 template<typename T>
-class SorterBase : public IF_GTKMM4(Gtk::Sorter, Glib::Object)
+class SorterBase : public Gtk::Sorter
 {
 public:
     SorterBase() = default;

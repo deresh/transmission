@@ -33,7 +33,7 @@ class FilterBar
     , public Gtk::Box
 {
 public:
-    using Model = IF_GTKMM4(Gio::ListModel, Gtk::TreeModel);
+    using Model = Gio::ListModel;
 
 public:
     FilterBar();

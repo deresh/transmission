@@ -57,7 +57,7 @@ constexpr auto TrackerSeparator = static_cast<TrackerType>(-1);
 
 class FilterBar::Impl
 {
-    using FilterModel = IF_GTKMM4(Gtk::FilterListModel, Gtk::TreeModelFilter);
+    using FilterModel = Gtk::FilterListModel;
 
 public:
     Impl(FilterBar& widget, Glib::RefPtr<Session> const& core);

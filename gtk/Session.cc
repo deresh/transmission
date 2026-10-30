@@ -162,7 +162,7 @@ private:
     void on_file_changed_in_watchdir(
         Glib::RefPtr<Gio::File> const& file,
         Glib::RefPtr<Gio::File> const& other_type,
-        IF_GLIBMM2_68(Gio::FileMonitor::Event, Gio::FileMonitorEvent) event_type);
+        Gio::FileMonitor::Event event_type);
 
     void on_pref_changed(tr_quark key);
 
@@ -401,7 +401,7 @@ void Session::Impl::watchdir_monitor_file(Glib::RefPtr<Gio::File> const& file)
 void Session::Impl::on_file_changed_in_watchdir(
     Glib::RefPtr<Gio::File> const& file,
     Glib::RefPtr<Gio::File> const& /*other_type*/,
-    IF_GLIBMM2_68(Gio::FileMonitor::Event, Gio::FileMonitorEvent) event_type)
+    Gio::FileMonitor::Event event_type)
 {
     if (event_type == TR_GIO_FILE_MONITOR_EVENT(CREATED))
     {

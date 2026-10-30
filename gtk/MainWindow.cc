@@ -74,8 +74,8 @@ class MainWindow::Impl
         Glib::RefPtr<Gio::Menu> section;
     };
 
-    using TorrentView = IF_GTKMM4(Gtk::ListView, Gtk::TreeView);
-    using TorrentViewSelection = IF_GTKMM4(Gtk::MultiSelection, Gtk::TreeSelection);
+    using TorrentView = Gtk::ListView;
+    using TorrentViewSelection = Gtk::MultiSelection;
 
 public:
     Impl(
@@ -152,7 +152,7 @@ private:
     Gtk::Image* alt_speed_image_ = nullptr;
     Gtk::ToggleButton* alt_speed_button_ = nullptr;
     sigc::connection pref_handler_id_;
-    IF_GTKMM4(Gtk::PopoverMenu*, Gtk::Menu*) popup_menu_ = nullptr;
+    Gtk::PopoverMenu* popup_menu_ = nullptr;
 };
 
 /***
@@ -729,7 +729,7 @@ void MainWindow::Impl::refresh()
 
 Glib::RefPtr<MainWindow::Impl::TorrentViewSelection> MainWindow::Impl::get_selection() const
 {
-    return IF_GTKMM4(selection_, view_->get_selection());
+    return selection_;
 }
 
 void MainWindow::for_each_selected_torrent(std::function<void(Glib::RefPtr<Torrent> const&)> const& callback) const

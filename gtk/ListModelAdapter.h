@@ -38,7 +38,7 @@ class ListModelAdapter
         sigc::connection notify_tag;
     };
 
-    using TrTreeModelFlags = IF_GTKMM4(Gtk::TreeModel::Flags, Gtk::TreeModelFlags);
+    using TrTreeModelFlags = Gtk::TreeModel::Flags;
 
 public:
     template<typename T>

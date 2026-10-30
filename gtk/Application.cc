@@ -532,15 +532,14 @@ void Application::on_startup()
 
 void Application::Impl::on_startup()
 {
-    IF_GTKMM4(Gtk::IconTheme::get_for_display(Gdk::Display::get_default()), Gtk::IconTheme::get_default())
-        ->add_resource_path(gtr_get_full_resource_path("icons"s));
+    Gtk::IconTheme::get_for_display(Gdk::Display::get_default())->add_resource_path(gtr_get_full_resource_path("icons"s));
     Gtk::Window::set_default_icon_name(std::string(AppIconName));
 
     /* Add style provider to the window. */
     auto css_provider = Gtk::CssProvider::create();
     css_provider->load_from_resource(gtr_get_full_resource_path("transmission-ui.css"));
-    Gtk::StyleContext::IF_GTKMM4(add_provider_for_display, add_provider_for_screen)(
-        IF_GTKMM4(Gdk::Display::get_default(), Gdk::Screen::get_default()),
+    Gtk::StyleContext::add_provider_for_display(
+        Gdk::Display::get_default(),
         css_provider,
         GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 
@@ -866,7 +865,7 @@ void Application::Impl::on_app_exit()
 
     auto* icon = Gtk::make_managed<Gtk::Image>();
     icon->property_icon_name() = "network-workgroup";
-    icon->property_icon_size() = IF_GTKMM4(Gtk::IconSize::LARGE, Gtk::ICON_SIZE_DIALOG);
+    icon->property_icon_size() = Gtk::IconSize::LARGE;
     p->attach(*icon, 0, 0, 1, 2);
 
     auto* top_label = Gtk::make_managed<Gtk::Label>();
@@ -1311,11 +1310,10 @@ void Application::Impl::copy_magnet_link_to_clipboard(Glib::RefPtr<Torrent> cons
     auto const display = wind_->get_display();
 
     /* this is The Right Thing for copy/paste... */
-    IF_GTKMM4(display->get_clipboard(), Gtk::Clipboard::get_for_display(display, GDK_SELECTION_CLIPBOARD))->set_text(magnet);
+    display->get_clipboard()->set_text(magnet);
 
     /* ...but people using plain ol' X need this instead */
-    IF_GTKMM4(display->get_primary_clipboard(), Gtk::Clipboard::get_for_display(display, GDK_SELECTION_PRIMARY))
-        ->set_text(magnet);
+    display->get_primary_clipboard()->set_text(magnet);
 }
 
 void gtr_actions_handler(Glib::ustring const& action_name, gpointer user_data)

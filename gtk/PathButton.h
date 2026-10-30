@@ -19,9 +19,9 @@
 #include <memory>
 #include <string>
 
-class PathButton : public IF_GTKMM4(Gtk::Button, Gtk::FileChooserButton)
+class PathButton : public Gtk::Button
 {
-    using BaseWidgetType = IF_GTKMM4(Gtk::Button, Gtk::FileChooserButton);
+    using BaseWidgetType = Gtk::Button;
 
 public:
     PathButton();
