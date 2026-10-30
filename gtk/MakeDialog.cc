@@ -218,9 +218,9 @@ bool MakeProgressDialog::onProgressDialogRefresh()
     progress_bar_->set_text(str);
 
     /* buttons */
-    set_response_sensitive(TR_GTK_RESPONSE_TYPE(CANCEL), !is_done);
-    set_response_sensitive(TR_GTK_RESPONSE_TYPE(CLOSE), is_done);
-    set_response_sensitive(TR_GTK_RESPONSE_TYPE(ACCEPT), is_done && success);
+    set_response_sensitive(Gtk::ResponseType::CANCEL, !is_done);
+    set_response_sensitive(Gtk::ResponseType::CLOSE, is_done);
+    set_response_sensitive(Gtk::ResponseType::ACCEPT, is_done && success);
 
     success_ = success;
     return true;
@@ -243,17 +243,17 @@ void MakeProgressDialog::onProgressDialogResponse(int response)
 {
     switch (response)
     {
-    case TR_GTK_RESPONSE_TYPE(CANCEL):
-    case TR_GTK_RESPONSE_TYPE(DELETE_EVENT):
+    case Gtk::ResponseType::CANCEL:
+    case Gtk::ResponseType::DELETE_EVENT:
         builder_.cancel_checksums();
         close();
         break;
 
-    case TR_GTK_RESPONSE_TYPE(ACCEPT):
+    case Gtk::ResponseType::ACCEPT:
         addTorrent();
         [[fallthrough]];
 
-    case TR_GTK_RESPONSE_TYPE(CLOSE):
+    case Gtk::ResponseType::CLOSE:
         close();
         break;
 
@@ -303,13 +303,13 @@ std::unique_ptr<MakeProgressDialog> MakeProgressDialog::create(
 
 void MakeDialog::Impl::onResponse(int response)
 {
-    if (response == TR_GTK_RESPONSE_TYPE(CLOSE) || response == TR_GTK_RESPONSE_TYPE(DELETE_EVENT))
+    if (response == Gtk::ResponseType::CLOSE || response == Gtk::ResponseType::DELETE_EVENT)
     {
         dialog_.close();
         return;
     }
 
-    if (response != TR_GTK_RESPONSE_TYPE(ACCEPT) || !builder_.has_value())
+    if (response != Gtk::ResponseType::ACCEPT || !builder_.has_value())
     {
         return;
     }
@@ -426,7 +426,7 @@ void MakeDialog::Impl::onSourceToggled(Gtk::CheckButton* tb, PathButton* chooser
 
 bool MakeDialog::Impl::set_dropped_source_path(std::string const& filename)
 {
-    if (Glib::file_test(filename, TR_GLIB_FILE_TEST(IS_DIR)))
+    if (Glib::file_test(filename, Glib::FileTest::IS_DIR))
     {
         /* a directory was dragged onto the dialog... */
         folder_radio_->set_active(true);
@@ -434,7 +434,7 @@ bool MakeDialog::Impl::set_dropped_source_path(std::string const& filename)
         return true;
     }
 
-    if (Glib::file_test(filename, TR_GLIB_FILE_TEST(IS_REGULAR)))
+    if (Glib::file_test(filename, Glib::FileTest::IS_REGULAR))
     {
         /* a file was dragged on to the dialog... */
         file_radio_->set_active(true);
@@ -499,7 +499,7 @@ MakeDialog::Impl::Impl(MakeDialog& dialog, Glib::RefPtr<Gtk::Builder> const& bui
 {
     dialog_.signal_response().connect(sigc::mem_fun(*this, &Impl::onResponse));
 
-    destination_chooser_->set_filename(Glib::get_user_special_dir(TR_GLIB_USER_DIRECTORY(DESKTOP)));
+    destination_chooser_->set_filename(Glib::get_user_special_dir(Glib::UserDirectory::DESKTOP));
 
     folder_radio_->signal_toggled().connect([this]() { onSourceToggled(folder_radio_, folder_chooser_); });
     folder_chooser_->signal_selection_changed().connect([this]() { onChooserChosen(folder_chooser_); });

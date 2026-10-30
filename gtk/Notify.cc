@@ -149,7 +149,7 @@ void dbus_proxy_ready_callback(Glib::RefPtr<Gio::AsyncResult>& res)
             fmt::format(
                 fmt::runtime(_("Couldn't create proxy for '{bus}': {error} ({error_code})")),
                 fmt::arg("bus", NotificationsDbusName),
-                fmt::arg("error", TR_GLIB_EXCEPTION_WHAT(e)),
+                fmt::arg("error", (e).what()),
                 fmt::arg("error_code", e.code())));
         return;
     }
@@ -163,13 +163,13 @@ void dbus_proxy_ready_callback(Glib::RefPtr<Gio::AsyncResult>& res)
 void gtr_notify_init()
 {
     Gio::DBus::Proxy::create_for_bus(
-        TR_GIO_DBUS_BUS_TYPE(SESSION),
+        Gio::DBus::BusType::SESSION,
         std::string(NotificationsDbusName),
         std::string(NotificationsDbusCoreObject),
         std::string(NotificationsDbusCoreInterface),
         &dbus_proxy_ready_callback,
         {},
-        TR_GIO_DBUS_PROXY_FLAGS(DO_NOT_LOAD_PROPERTIES));
+        Gio::DBus::ProxyFlags::DO_NOT_LOAD_PROPERTIES);
 }
 
 namespace
@@ -208,7 +208,7 @@ void gtr_notify_torrent_completed(Glib::RefPtr<Session> const& core, tr_torrent_
 
         try
         {
-            Glib::spawn_async({}, argv, TR_GLIB_SPAWN_FLAGS(SEARCH_PATH));
+            Glib::spawn_async({}, argv, Glib::SpawnFlags::SEARCH_PATH);
         }
         catch (Glib::SpawnError const& e)
         {

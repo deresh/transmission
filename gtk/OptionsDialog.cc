@@ -101,7 +101,7 @@ void OptionsDialog::Impl::addResponseCB(int response)
 {
     if (tor_ != nullptr)
     {
-        if (response == TR_GTK_RESPONSE_TYPE(ACCEPT))
+        if (response == Gtk::ResponseType::ACCEPT)
         {
             tr_torrentSetPriority(tor_, static_cast<tr_priority_t>(gtr_combo_box_get_active_enum(*priority_combo_)));
 
@@ -262,7 +262,7 @@ OptionsDialog::Impl::Impl(
     , priority_combo_(gtr_get_widget<Gtk::ComboBox>(builder, "priority_combo"))
     , freespace_label_(gtr_get_widget_derived<FreeSpaceLabel>(builder, "free_space_label", core_, downloadDir_))
 {
-    dialog_.set_default_response(TR_GTK_RESPONSE_TYPE(ACCEPT));
+    dialog_.set_default_response(Gtk::ResponseType::ACCEPT);
     dialog.signal_response().connect(sigc::mem_fun(*this, &Impl::addResponseCB));
 
     gtr_priority_combo_init(*priority_combo_);
@@ -305,7 +305,7 @@ OptionsDialog::Impl::Impl(
         sourceChanged(source_chooser);
     }
 
-    dialog_.get_widget_for_response(TR_GTK_RESPONSE_TYPE(ACCEPT))->grab_focus();
+    dialog_.get_widget_for_response(Gtk::ResponseType::ACCEPT)->grab_focus();
 }
 
 /****
@@ -314,7 +314,7 @@ OptionsDialog::Impl::Impl(
 
 void TorrentFileChooserDialog::onOpenDialogResponse(int response, Glib::RefPtr<Session> const& core)
 {
-    if (response == TR_GTK_RESPONSE_TYPE(ACCEPT))
+    if (response == Gtk::ResponseType::ACCEPT)
     {
         bool const do_start = gtr_pref_flag_get(TR_KEY_start_added_torrents);
         bool const do_prompt = get_choice(std::string(ShowOptionsDialogChoice)) == "true";
@@ -345,7 +345,7 @@ std::unique_ptr<TorrentFileChooserDialog> TorrentFileChooserDialog::create(
 }
 
 TorrentFileChooserDialog::TorrentFileChooserDialog(Gtk::Window& parent, Glib::RefPtr<Session> const& core)
-    : Gtk::FileChooserNative(_("Open a Torrent"), parent, TR_GTK_FILE_CHOOSER_ACTION(OPEN), _("_Open"), _("_Cancel"))
+    : Gtk::FileChooserNative(_("Open a Torrent"), parent, Gtk::FileChooser::Action::OPEN, _("_Open"), _("_Cancel"))
 {
     set_modal(true);
 
@@ -368,11 +368,11 @@ TorrentFileChooserDialog::TorrentFileChooserDialog(Gtk::Window& parent, Glib::Re
 
 void TorrentUrlChooserDialog::onOpenURLResponse(int response, Gtk::Entry const& entry, Glib::RefPtr<Session> const& core)
 {
-    if (response == TR_GTK_RESPONSE_TYPE(CANCEL))
+    if (response == Gtk::ResponseType::CANCEL)
     {
         close();
     }
-    else if (response == TR_GTK_RESPONSE_TYPE(ACCEPT))
+    else if (response == Gtk::ResponseType::ACCEPT)
     {
         auto const url = gtr_str_strip(entry.get_text());
 
@@ -409,7 +409,7 @@ TorrentUrlChooserDialog::TorrentUrlChooserDialog(
     set_transient_for(parent);
 
     auto* const e = gtr_get_widget<Gtk::Entry>(builder, "url_entry");
-    auto* const accept = get_widget_for_response(TR_GTK_RESPONSE_TYPE(ACCEPT));
+    auto* const accept = get_widget_for_response(Gtk::ResponseType::ACCEPT);
     gtr_paste_clipboard_url_into_entry(*e);
 
     set_default_widget(*accept);

@@ -86,7 +86,7 @@ inline GParamSpec* gtr_get_param_spec(char const* name, char const* nick, char c
     auto dummy_value = Glib::Value<T>();
     dummy_value.init(decltype(dummy_value)::value_type());
 
-    return dummy_value.create_param_spec(name, nick, blurb, TR_GLIB_PARAM_FLAGS(READABLE));
+    return dummy_value.create_param_spec(name, nick, blurb, Glib::ParamFlags::READABLE);
 }
 
 void gtr_open_file(std::string_view base, std::string_view relative_path);

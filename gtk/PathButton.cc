@@ -161,7 +161,7 @@ void PathButton::Impl::show_dialog()
     dialog->signal_response().connect(
         [this, dialog](int response) mutable
         {
-            if (response == TR_GTK_RESPONSE_TYPE(ACCEPT))
+            if (response == Gtk::ResponseType::ACCEPT)
             {
                 set_filename(dialog->get_file()->get_path());
                 selection_changed_.emit();

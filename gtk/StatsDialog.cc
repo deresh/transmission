@@ -106,10 +106,10 @@ void StatsDialog::Impl::dialogResponse(int response)
             dialog_,
             _("Reset your statistics?"),
             false,
-            TR_GTK_MESSAGE_TYPE(QUESTION),
-            TR_GTK_BUTTONS_TYPE(NONE),
+            Gtk::MessageType::QUESTION,
+            Gtk::ButtonsType::NONE,
             true);
-        w->add_button(_("_Cancel"), TR_GTK_RESPONSE_TYPE(CANCEL));
+        w->add_button(_("_Cancel"), Gtk::ResponseType::CANCEL);
         w->add_button(_("_Reset"), TR_RESPONSE_RESET);
         w->set_secondary_text(
             _("These statistics are for your information only. "
@@ -127,7 +127,7 @@ void StatsDialog::Impl::dialogResponse(int response)
         w->show();
     }
 
-    if (response == TR_GTK_RESPONSE_TYPE(CLOSE))
+    if (response == Gtk::ResponseType::CLOSE)
     {
         dialog_.close();
     }
@@ -165,7 +165,7 @@ StatsDialog::Impl::Impl(StatsDialog& dialog, Glib::RefPtr<Gtk::Builder> const& b
     , all_time_lb_(gtr_get_widget<Gtk::Label>(builder, "total_duration_value_label"))
     , all_sessions_lb_(gtr_get_widget<Gtk::Label>(builder, "start_count_label"))
 {
-    dialog_.set_default_response(TR_GTK_RESPONSE_TYPE(CLOSE));
+    dialog_.set_default_response(Gtk::ResponseType::CLOSE);
     dialog_.signal_response().connect(sigc::mem_fun(*this, &Impl::dialogResponse));
 
     updateStats();

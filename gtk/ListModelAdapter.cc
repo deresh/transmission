@@ -61,7 +61,7 @@ ListModelAdapter::ListModelAdapter(
 
 ListModelAdapter::TrTreeModelFlags ListModelAdapter::get_flags_vfunc() const
 {
-    return TR_GTK_TREE_MODEL_FLAGS(ITERS_PERSIST) | TR_GTK_TREE_MODEL_FLAGS(LIST_ONLY);
+    return Gtk::TreeModel::Flags::ITERS_PERSIST | Gtk::TreeModel::Flags::LIST_ONLY;
 }
 
 int ListModelAdapter::get_n_columns_vfunc() const

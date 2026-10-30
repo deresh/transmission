@@ -403,7 +403,7 @@ void Session::Impl::on_file_changed_in_watchdir(
     Glib::RefPtr<Gio::File> const& /*other_type*/,
     Gio::FileMonitor::Event event_type)
 {
-    if (event_type == TR_GIO_FILE_MONITOR_EVENT(CREATED))
+    if (event_type == Gio::FileMonitor::Event::CREATED)
     {
         watchdir_monitor_file(file);
     }
@@ -1033,7 +1033,7 @@ bool gtr_inhibit_hibernation(guint32& cookie)
 
     try
     {
-        auto const connection = Gio::DBus::Connection::get_sync(TR_GIO_DBUS_BUS_TYPE(SESSION));
+        auto const connection = Gio::DBus::Connection::get_sync(Gio::DBus::BusType::SESSION);
 
         auto response = connection->call_sync(
             std::string(SessionManagerObjectPath),
@@ -1069,7 +1069,7 @@ void gtr_uninhibit_hibernation(guint inhibit_cookie)
 {
     try
     {
-        auto const connection = Gio::DBus::Connection::get_sync(TR_GIO_DBUS_BUS_TYPE(SESSION));
+        auto const connection = Gio::DBus::Connection::get_sync(Gio::DBus::BusType::SESSION);
 
         connection->call_sync(
             std::string(SessionManagerObjectPath),

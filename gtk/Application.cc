@@ -366,7 +366,7 @@ void register_magnet_link_handler()
         auto const app = Gio::AppInfo::create_from_commandline(
             "transmission-gtk",
             "transmission-gtk",
-            TR_GIO_APP_INFO_CREATE_FLAGS(SUPPORTS_URIS));
+            Gio::AppInfo::CreateFlags::SUPPORTS_URIS);
         app->set_as_default_for_type(content_type);
     }
     catch (Gio::Error const& e)
@@ -663,7 +663,7 @@ constexpr char const* ApplicationId = "com.transmissionbt.TransmissionAdw";
 } // namespace
 
 Application::Application(std::string const& config_dir, bool start_paused, bool start_iconified)
-    : Gtk::Application(ApplicationId, TR_GIO_APPLICATION_FLAGS(HANDLES_OPEN))
+    : Gtk::Application(ApplicationId, Gio::Application::Flags::HANDLES_OPEN)
     , impl_(std::make_unique<Impl>(*this, config_dir, start_paused, start_iconified))
 {
 }
@@ -859,8 +859,8 @@ void Application::Impl::on_app_exit()
 
     auto* p = Gtk::make_managed<Gtk::Grid>();
     p->set_column_spacing(GUI_PAD_BIG);
-    p->set_halign(TR_GTK_ALIGN(CENTER));
-    p->set_valign(TR_GTK_ALIGN(CENTER));
+    p->set_halign(Gtk::Align::CENTER);
+    p->set_valign(Gtk::Align::CENTER);
     wind_->set_child(*p);
 
     auto* icon = Gtk::make_managed<Gtk::Image>();
@@ -870,19 +870,19 @@ void Application::Impl::on_app_exit()
 
     auto* top_label = Gtk::make_managed<Gtk::Label>();
     top_label->set_markup(fmt::format("<b>{:s}</b>", _("Closing Connections…")));
-    top_label->set_halign(TR_GTK_ALIGN(START));
-    top_label->set_valign(TR_GTK_ALIGN(CENTER));
+    top_label->set_halign(Gtk::Align::START);
+    top_label->set_valign(Gtk::Align::CENTER);
     p->attach(*top_label, 1, 0, 1, 1);
 
     auto* bottom_label = Gtk::make_managed<Gtk::Label>(_("Sending upload/download totals to tracker…"));
-    bottom_label->set_halign(TR_GTK_ALIGN(START));
-    bottom_label->set_valign(TR_GTK_ALIGN(CENTER));
+    bottom_label->set_halign(Gtk::Align::START);
+    bottom_label->set_valign(Gtk::Align::CENTER);
     p->attach(*bottom_label, 1, 1, 1, 1);
 
     auto* button = Gtk::make_managed<Gtk::Button>(_("_Quit Now"), true);
     button->set_margin_top(GUI_PAD);
-    button->set_halign(TR_GTK_ALIGN(START));
-    button->set_valign(TR_GTK_ALIGN(END));
+    button->set_halign(Gtk::Align::START);
+    button->set_valign(Gtk::Align::END);
     button->signal_clicked().connect([]() { ::exit(0); });
     p->attach(*button, 1, 2, 1, 1);
 
@@ -923,8 +923,8 @@ void Application::Impl::show_torrent_errors(Glib::ustring const& primary, std::v
         *wind_,
         primary,
         false,
-        TR_GTK_MESSAGE_TYPE(ERROR),
-        TR_GTK_BUTTONS_TYPE(CLOSE),
+        Gtk::MessageType::ERROR,
+        Gtk::ButtonsType::CLOSE,
         true);
     w->set_secondary_text(s.str());
     w->signal_response().connect([w](int /*response*/) mutable { w.reset(); });

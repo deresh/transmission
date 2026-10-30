@@ -457,7 +457,7 @@ bool FilterBar::Impl::show_mode_filter_model_update()
             }
         }
 
-        status_model_update_count(TR_GTK_TREE_MODEL_CHILD_ITER(row), hits);
+        status_model_update_count((row).get_iter(), hits);
     }
 
     return false;

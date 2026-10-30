@@ -78,12 +78,12 @@ private:
 
 void PrefsDialog::Impl::response_cb(int response)
 {
-    if (response == TR_GTK_RESPONSE_TYPE(HELP))
+    if (response == Gtk::ResponseType::HELP)
     {
         gtr_open_uri(gtr_get_help_uri() + "/html/preferences.html");
     }
 
-    if (response == TR_GTK_RESPONSE_TYPE(CLOSE))
+    if (response == Gtk::ResponseType::CLOSE)
     {
         dialog_.close();
     }

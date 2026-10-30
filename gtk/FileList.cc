@@ -262,7 +262,7 @@ bool refreshFilesForeach(
         {
             refresh_data.resort_needed = true;
 
-            store->set_sort_column(GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID, TR_GTK_SORT_TYPE(ASCENDING));
+            store->set_sort_column(GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID, Gtk::SortType::ASCENDING);
         }
     }
 
@@ -337,7 +337,7 @@ void FileList::Impl::refresh()
     }
     else
     {
-        Gtk::SortType order = TR_GTK_SORT_TYPE(ASCENDING);
+        Gtk::SortType order = Gtk::SortType::ASCENDING;
         int sort_column_id = 0;
         store_->get_sort_column_id(sort_column_id, order);
 
@@ -502,7 +502,7 @@ void buildTree(FileRowNode& node, build_data& build)
     {
         build_data b = build;
         b.iter = child_iter;
-        node.foreach ([&b](auto& child_node) { buildTree(child_node, b); }, TR_GLIB_NODE_TREE_TRAVERSE_FLAGS(FileRowNode, ALL));
+        node.foreach ([&b](auto& child_node) { buildTree(child_node, b); }, FileRowNode::TraverseFlags::ALL);
     }
 }
 
@@ -581,9 +581,7 @@ void FileList::Impl::set_torrent(tr_torrent_id_t torrent_id)
             build.w = &widget_;
             build.tor = tor;
             build.store = store_;
-            root.foreach (
-                [&build](auto& child_node) { buildTree(child_node, build); },
-                TR_GLIB_NODE_TREE_TRAVERSE_FLAGS(FileRowNode, ALL));
+            root.foreach ([&build](auto& child_node) { buildTree(child_node, build); }, FileRowNode::TraverseFlags::ALL);
         }
 
         refresh();
@@ -595,7 +593,7 @@ void FileList::Impl::set_torrent(tr_torrent_id_t torrent_id)
     view_->set_model(store_);
 
     /* set default sort by label */
-    store_->set_sort_column(file_cols.label, TR_GTK_SORT_TYPE(ASCENDING));
+    store_->set_sort_column(file_cols.label, Gtk::SortType::ASCENDING);
 
     view_->expand_row(Gtk::TreeModel::Path("0"), false);
     // view_->expand_all();
@@ -808,7 +806,7 @@ bool FileList::Impl::onViewButtonPressed(guint button, TrGdkModifierType state, 
 
     if (button == GDK_BUTTON_PRIMARY &&
         // NOLINTNEXTLINE(hicpp-signed-bitwise)
-        (state & (TR_GDK_MODIFIED_TYPE(SHIFT_MASK) | TR_GDK_MODIFIED_TYPE(CONTROL_MASK))) == TrGdkModifierType{} &&
+        (state & (Gdk::ModifierType::SHIFT_MASK | Gdk::ModifierType::CONTROL_MASK)) == TrGdkModifierType{} &&
         getAndSelectEventPath(view_x, view_y, col, path))
     {
         handled = onViewPathToggled(col, path);
@@ -859,8 +857,8 @@ void FileList::Impl::on_rename_done_idle(Glib::ustring const& path_string, Glib:
                 fmt::arg("error", tr_strerror(error)),
                 fmt::arg("error_code", error)),
             false,
-            TR_GTK_MESSAGE_TYPE(ERROR),
-            TR_GTK_BUTTONS_TYPE(CLOSE),
+            Gtk::MessageType::ERROR,
+            Gtk::ButtonsType::CLOSE,
             true);
         w->set_secondary_text(_("Please correct the errors and try again."));
         w->signal_response().connect([w](int /*response*/) mutable { w.reset(); });
@@ -944,7 +942,7 @@ FileList::Impl::Impl(
 
     /* set up view */
     auto const sel = view_->get_selection();
-    sel->set_mode(TR_GTK_SELECTION_MODE(MULTIPLE));
+    sel->set_mode(Gtk::SelectionMode::MULTIPLE);
     view_->expand_all();
     view_->set_search_column(file_cols.label);
 
@@ -979,7 +977,7 @@ FileList::Impl::Impl(
         rend->property_xpad() = GUI_PAD;
         rend->property_xalign() = 1.0F;
         auto* col = Gtk::make_managed<Gtk::TreeViewColumn>(_("Size"), *rend);
-        col->set_sizing(TR_GTK_TREE_VIEW_COLUMN_SIZING(GROW_ONLY));
+        col->set_sizing(Gtk::TreeViewColumn::Sizing::GROW_ONLY);
         col->set_sort_column(file_cols.size);
         col->add_attribute(rend->property_text(), file_cols.size_str);
         view_->append_column(*col);
@@ -991,7 +989,7 @@ FileList::Impl::Impl(
         auto* col = Gtk::make_managed<Gtk::TreeViewColumn>(_("Have"), *rend);
         col->add_attribute(rend->property_text(), file_cols.prog_str);
         col->add_attribute(rend->property_value(), file_cols.prog);
-        col->set_sizing(TR_GTK_TREE_VIEW_COLUMN_SIZING(FIXED));
+        col->set_sizing(Gtk::TreeViewColumn::Sizing::FIXED);
         col->set_sort_column(file_cols.prog);
         view_->append_column(*col);
     }
@@ -1000,7 +998,7 @@ FileList::Impl::Impl(
         /* add "enabled" column */
         auto* rend = Gtk::make_managed<Gtk::CellRendererToggle>();
         auto* col = Gtk::make_managed<Gtk::TreeViewColumn>(_("Download"), *rend);
-        col->set_sizing(TR_GTK_TREE_VIEW_COLUMN_SIZING(FIXED));
+        col->set_sizing(Gtk::TreeViewColumn::Sizing::FIXED);
         col->set_cell_data_func(*rend, sigc::ptr_fun(&renderDownload));
         col->set_sort_column(file_cols.enabled);
         view_->append_column(*col);
@@ -1011,7 +1009,7 @@ FileList::Impl::Impl(
         auto* rend = Gtk::make_managed<Gtk::CellRendererText>();
         rend->property_xalign() = 0.5F;
         auto* col = Gtk::make_managed<Gtk::TreeViewColumn>(_("Priority"), *rend);
-        col->set_sizing(TR_GTK_TREE_VIEW_COLUMN_SIZING(FIXED));
+        col->set_sizing(Gtk::TreeViewColumn::Sizing::FIXED);
         col->set_sort_column(file_cols.priority);
         col->set_cell_data_func(*rend, sigc::ptr_fun(&renderPriority));
         view_->append_column(*col);

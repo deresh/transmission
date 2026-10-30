@@ -150,7 +150,7 @@ bool MessageLogWindow::Impl::is_pinned_to_new() const
 
             if (auto const iter = sort_->children()[row_count - 1]; iter)
             {
-                pinned_to_new = last_visible == sort_->get_path(TR_GTK_TREE_MODEL_CHILD_ITER(iter));
+                pinned_to_new = last_visible == sort_->get_path((iter).get_iter());
             }
         }
     }
@@ -168,7 +168,7 @@ void MessageLogWindow::Impl::scroll_to_bottom()
 
     if (auto const iter = sort_->children()[row_count - 1]; iter)
     {
-        view_->scroll_to_row(sort_->get_path(TR_GTK_TREE_MODEL_CHILD_ITER(iter)), 1);
+        view_->scroll_to_row(sort_->get_path((iter).get_iter()), 1);
     }
 }
 
@@ -256,8 +256,8 @@ void MessageLogWindow::Impl::doSave(std::string const& filename)
                 fmt::arg("error", e.code().message()),
                 fmt::arg("error_code", e.code().value())),
             false,
-            TR_GTK_MESSAGE_TYPE(ERROR),
-            TR_GTK_BUTTONS_TYPE(CLOSE));
+            Gtk::MessageType::ERROR,
+            Gtk::ButtonsType::CLOSE);
         w->set_secondary_text(e.code().message());
         w->signal_response().connect([w](int /*response*/) mutable { w.reset(); });
         w->show();
@@ -266,7 +266,7 @@ void MessageLogWindow::Impl::doSave(std::string const& filename)
 
 void MessageLogWindow::Impl::onSaveDialogResponse(Glib::RefPtr<Gtk::FileChooserNative>& d, int response)
 {
-    auto const filename = response == TR_GTK_RESPONSE_TYPE(ACCEPT) ? d->get_file()->get_path() : std::string();
+    auto const filename = response == Gtk::ResponseType::ACCEPT ? d->get_file()->get_path() : std::string();
 
     d.reset();
 
@@ -278,7 +278,7 @@ void MessageLogWindow::Impl::onSaveDialogResponse(Glib::RefPtr<Gtk::FileChooserN
 
 void MessageLogWindow::Impl::onSaveRequest()
 {
-    auto d = Gtk::FileChooserNative::create(_("Save Log"), window_, TR_GTK_FILE_CHOOSER_ACTION(SAVE), _("_Save"), _("_Cancel"));
+    auto d = Gtk::FileChooserNative::create(_("Save Log"), window_, Gtk::FileChooser::Action::SAVE, _("_Save"), _("_Cancel"));
     d->signal_response().connect([this, d](int response) mutable { onSaveDialogResponse(d, response); });
     d->show();
 }
@@ -350,7 +350,7 @@ void appendColumn(Gtk::TreeView* view, Gtk::TreeModelColumnBase const& col)
         auto* r = Gtk::make_managed<Gtk::CellRendererText>();
         c = Gtk::make_managed<Gtk::TreeViewColumn>(_("Name"), *r);
         c->set_cell_data_func(*r, [r](auto* /*renderer*/, auto const& iter) { renderText(r, iter, message_log_cols.name); });
-        c->set_sizing(TR_GTK_TREE_VIEW_COLUMN_SIZING(FIXED));
+        c->set_sizing(Gtk::TreeViewColumn::Sizing::FIXED);
         c->set_fixed_width(200);
         c->set_resizable(true);
     }
@@ -359,7 +359,7 @@ void appendColumn(Gtk::TreeView* view, Gtk::TreeModelColumnBase const& col)
         auto* r = Gtk::make_managed<Gtk::CellRendererText>();
         c = Gtk::make_managed<Gtk::TreeViewColumn>(_("Message"), *r);
         c->set_cell_data_func(*r, [r](auto* /*renderer*/, auto const& iter) { renderText(r, iter, message_log_cols.message); });
-        c->set_sizing(TR_GTK_TREE_VIEW_COLUMN_SIZING(FIXED));
+        c->set_sizing(Gtk::TreeViewColumn::Sizing::FIXED);
         c->set_fixed_width(500);
         c->set_resizable(true);
     }
@@ -530,7 +530,7 @@ MessageLogWindow::Impl::Impl(
     addLatestMessagesToStore(store_, log_messages(), std::size(log_messages()));
     onRefresh();
 
-    sort_->set_sort_column(message_log_cols.sequence, TR_GTK_SORT_TYPE(ASCENDING));
+    sort_->set_sort_column(message_log_cols.sequence, Gtk::SortType::ASCENDING);
     filter_->set_visible_func(sigc::mem_fun(*this, &Impl::isRowVisible));
 
     view_->set_model(sort_);

@@ -284,8 +284,8 @@ void gtr_add_torrent_error_dialog(Gtk::Widget& child, tr_torrent* duplicate_torr
         gtr_widget_get_window(child),
         _("Couldn't open torrent"),
         false,
-        TR_GTK_MESSAGE_TYPE(ERROR),
-        TR_GTK_BUTTONS_TYPE(CLOSE));
+        Gtk::MessageType::ERROR,
+        Gtk::ButtonsType::CLOSE);
     w->set_secondary_text(secondary);
     w->signal_response().connect([w](int /*response*/) mutable { w.reset(); });
     w->show();
@@ -435,7 +435,7 @@ void setup_item_view_button_event_handling_impl(
                 auto* const sequence = controller->get_current_sequence();
                 auto const event = controller->get_last_event(sequence);
 
-                if (event->get_event_type() == TR_GDK_EVENT_TYPE(BUTTON_PRESS) &&
+                if (event->get_event_type() == Gdk::Event::Type::BUTTON_PRESS &&
                     press_callback(
                         event->get_button(),
                         event->get_modifier_state(),
@@ -461,7 +461,7 @@ void setup_item_view_button_event_handling_impl(
                 auto* const sequence = controller->get_current_sequence();
                 auto const event = controller->get_last_event(sequence);
 
-                if (event->get_event_type() == TR_GDK_EVENT_TYPE(BUTTON_RELEASE) && release_callback(event_x, event_y))
+                if (event->get_event_type() == Gdk::Event::Type::BUTTON_RELEASE && release_callback(event_x, event_y))
                 {
                     controller->set_sequence_state(sequence, Gtk::EventSequenceState::CLAIMED);
                 }
@@ -509,7 +509,7 @@ bool gtr_file_trash_or_remove(std::string_view const filename, tr_error* error)
         }
         catch (Glib::Error const& e)
         {
-            error->set(e.code(), TR_GLIB_EXCEPTION_WHAT(e));
+            error->set(e.code(), (e).what());
             gtr_message(
                 fmt::format(
                     fmt::runtime(_("Couldn't move '{path}' to trash: {error} ({error_code})")),
@@ -528,7 +528,7 @@ bool gtr_file_trash_or_remove(std::string_view const filename, tr_error* error)
         }
         catch (Glib::Error const& e)
         {
-            error->set(e.code(), TR_GLIB_EXCEPTION_WHAT(e));
+            error->set(e.code(), (e).what());
             gtr_message(
                 fmt::format(
                     fmt::runtime(_("Couldn't remove '{path}': {error} ({error_code})")),
@@ -623,7 +623,7 @@ void gtr_open_uri(std::string_view const uri)
 
     try
     {
-        Glib::spawn_async({}, std::vector<std::string>{ "xdg-open", uri_str }, TR_GLIB_SPAWN_FLAGS(SEARCH_PATH));
+        Glib::spawn_async({}, std::vector<std::string>{ "xdg-open", uri_str }, Glib::SpawnFlags::SEARCH_PATH);
         return;
     }
     catch (Glib::SpawnError const& e)
@@ -679,7 +679,7 @@ void gtr_combo_box_set_active_enum(Gtk::ComboBox& combo, int value)
     {
         if (row.get_value(column) == value)
         {
-            combo.set_active(TR_GTK_TREE_MODEL_CHILD_ITER(row));
+            combo.set_active((row).get_iter());
             return;
         }
     }
@@ -783,7 +783,7 @@ void gtr_widget_set_visible(Gtk::Widget& widget, bool is_visible)
 
 Gtk::Window& gtr_widget_get_window(Gtk::Widget& widget)
 {
-    if (auto* const window = dynamic_cast<Gtk::Window*>(TR_GTK_WIDGET_GET_ROOT(widget)); window != nullptr)
+    if (auto* const window = dynamic_cast<Gtk::Window*>((widget).get_root()); window != nullptr)
     {
         return *window;
     }
@@ -837,8 +837,8 @@ void gtr_unrecognized_url_dialog(Gtk::Widget& parent, Glib::ustring const& url)
         gtr_widget_get_window(parent),
         fmt::format(fmt::runtime(_("Unsupported URL: '{url}'")), fmt::arg("url", url)),
         false /*use markup*/,
-        TR_GTK_MESSAGE_TYPE(ERROR),
-        TR_GTK_BUTTONS_TYPE(CLOSE),
+        Gtk::MessageType::ERROR,
+        Gtk::ButtonsType::CLOSE,
         true /*modal*/);
 
     gstr += fmt::format(fmt::runtime(_("Transmission doesn't know how to use '{url}'")), fmt::arg("url", url));

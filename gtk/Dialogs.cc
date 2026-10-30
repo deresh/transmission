@@ -106,8 +106,8 @@ void gtr_confirm_remove(
         parent,
         fmt::format("<big><b>{}</b></big>", primary_text),
         true /*use_markup*/,
-        TR_GTK_MESSAGE_TYPE(WARNING),
-        TR_GTK_BUTTONS_TYPE(NONE),
+        Gtk::MessageType::WARNING,
+        Gtk::ButtonsType::NONE,
         true /*modal*/);
 
     if (!secondary_text.empty())
@@ -115,14 +115,14 @@ void gtr_confirm_remove(
         d->set_secondary_text(secondary_text, true);
     }
 
-    d->add_button(_("_Cancel"), TR_GTK_RESPONSE_TYPE(CANCEL));
-    d->add_button(delete_files ? _("_Delete") : _("_Remove"), TR_GTK_RESPONSE_TYPE(ACCEPT));
-    d->set_default_response(TR_GTK_RESPONSE_TYPE(CANCEL));
+    d->add_button(_("_Cancel"), Gtk::ResponseType::CANCEL);
+    d->add_button(delete_files ? _("_Delete") : _("_Remove"), Gtk::ResponseType::ACCEPT);
+    d->set_default_response(Gtk::ResponseType::CANCEL);
 
     d->signal_response().connect(
         [d, core, torrent_ids, delete_files](int response) mutable
         {
-            if (response == TR_GTK_RESPONSE_TYPE(ACCEPT))
+            if (response == Gtk::ResponseType::ACCEPT)
             {
                 for (auto const id : torrent_ids)
                 {

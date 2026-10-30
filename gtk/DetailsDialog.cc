@@ -1532,7 +1532,7 @@ void setPeerViewColumns(Gtk::TreeView* peer_view)
             r->property_yalign() = 0.5F;
             c = Gtk::make_managed<Gtk::TreeViewColumn>(Glib::ustring(), *r);
             c->add_attribute(r->property_icon_name(), *col);
-            c->set_sizing(TR_GTK_TREE_VIEW_COLUMN_SIZING(FIXED));
+            c->set_sizing(Gtk::TreeViewColumn::Sizing::FIXED);
             c->set_fixed_width(20);
         }
         else if (*col == peer_cols.download_request_count_string)
@@ -1669,7 +1669,7 @@ void DetailsDialog::Impl::peer_page_init(Glib::RefPtr<Gtk::Builder> const& build
 
     peer_store_ = Gtk::ListStore::create(peer_cols);
     auto m = Gtk::TreeModelSort::create(peer_store_);
-    m->set_sort_column(peer_cols.progress, TR_GTK_SORT_TYPE(DESCENDING));
+    m->set_sort_column(peer_cols.progress, Gtk::SortType::DESCENDING);
 
     peer_view_->set_model(m);
     peer_view_->set_has_tooltip(true);
@@ -2150,7 +2150,7 @@ void EditTrackersDialog::on_response(int response)
 {
     bool do_destroy = true;
 
-    if (response == TR_GTK_RESPONSE_TYPE(ACCEPT))
+    if (response == Gtk::ResponseType::ACCEPT)
     {
         auto const text_buffer = urls_view_->get_buffer();
 
@@ -2166,8 +2166,8 @@ void EditTrackersDialog::on_response(int response)
                     *this,
                     _("List contains invalid URLs"),
                     false,
-                    TR_GTK_MESSAGE_TYPE(ERROR),
-                    TR_GTK_BUTTONS_TYPE(CLOSE),
+                    Gtk::MessageType::ERROR,
+                    Gtk::ButtonsType::CLOSE,
                     true);
                 w->set_secondary_text(_("Please correct the errors and try again."));
                 w->signal_response().connect([w](int /*response*/) mutable { w.reset(); });
@@ -2254,7 +2254,7 @@ AddTrackerDialog::AddTrackerDialog(
     set_title(fmt::format(fmt::runtime(_("{torrent_name} - Add Tracker")), fmt::arg("torrent_name", tr_torrentName(torrent))));
     set_transient_for(parent);
 
-    auto* const accept = get_widget_for_response(TR_GTK_RESPONSE_TYPE(ACCEPT));
+    auto* const accept = get_widget_for_response(Gtk::ResponseType::ACCEPT);
     set_default_widget(*accept);
 
     gtr_paste_clipboard_url_into_entry(*url_entry_);
@@ -2274,7 +2274,7 @@ void AddTrackerDialog::on_response(int response)
 {
     bool destroy = true;
 
-    if (response == TR_GTK_RESPONSE_TYPE(ACCEPT))
+    if (response == Gtk::ResponseType::ACCEPT)
     {
         auto const url = gtr_str_strip(url_entry_->get_text());
 
@@ -2403,7 +2403,7 @@ void DetailsDialog::Impl::refresh()
 
     if (torrents.empty())
     {
-        dialog_.response(TR_GTK_RESPONSE_TYPE(CLOSE));
+        dialog_.response(Gtk::ResponseType::CLOSE);
     }
 }
 
