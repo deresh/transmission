@@ -49,7 +49,7 @@
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
 
-#if GTK_CHECK_VERSION(4, 0, 0) && defined(GDK_WINDOWING_X11)
+#if defined(GDK_WINDOWING_X11)
 #include <optional>
 
 #include <gdk/x11/gdkx.h>
@@ -797,29 +797,21 @@ Gtk::Window& gtr_widget_get_window(Gtk::Widget& widget)
 
 void gtr_window_set_skip_taskbar_hint([[maybe_unused]] Gtk::Window& window, [[maybe_unused]] bool value)
 {
-#if GTK_CHECK_VERSION(4, 0, 0)
 #if defined(GDK_WINDOWING_X11)
     if (auto* const surface = Glib::unwrap(window.get_surface()); GDK_IS_X11_SURFACE(surface))
     {
         gdk_x11_surface_set_skip_taskbar_hint(surface, value ? TRUE : FALSE);
     }
 #endif
-#else
-    window.set_skip_taskbar_hint(value);
-#endif
 }
 
 void gtr_window_set_urgency_hint([[maybe_unused]] Gtk::Window& window, [[maybe_unused]] bool value)
 {
-#if GTK_CHECK_VERSION(4, 0, 0)
 #if defined(GDK_WINDOWING_X11)
     if (auto* const surface = Glib::unwrap(window.get_surface()); GDK_IS_X11_SURFACE(surface))
     {
         gdk_x11_surface_set_urgency_hint(surface, value ? TRUE : FALSE);
     }
-#endif
-#else
-    window.set_urgency_hint(value);
 #endif
 }
 
