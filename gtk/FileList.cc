@@ -959,7 +959,7 @@ FileList::Impl::Impl(
         /* add text renderer */
         auto* text_rend = Gtk::make_managed<Gtk::CellRendererText>();
         text_rend->property_editable() = true;
-        text_rend->property_ellipsize() = TR_PANGO_ELLIPSIZE_MODE(END);
+        text_rend->property_ellipsize() = Pango::EllipsizeMode::END;
         text_rend->property_scale() = FileAndSizeScale;
         text_rend->signal_edited().connect(sigc::mem_fun(*this, &Impl::cell_edited_callback));
         col->pack_start(*text_rend, true);
@@ -972,7 +972,7 @@ FileList::Impl::Impl(
     {
         /* add "size" column */
         auto* rend = Gtk::make_managed<Gtk::CellRendererText>();
-        rend->property_alignment() = TR_PANGO_ALIGNMENT(RIGHT);
+        rend->property_alignment() = Pango::Alignment::RIGHT;
         rend->property_scale() = FileAndSizeScale;
         rend->property_xpad() = GUI_PAD;
         rend->property_xalign() = 1.0F;

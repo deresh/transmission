@@ -330,7 +330,7 @@ void renderText(
 {
     auto const* const node = iter->get_value(message_log_cols.tr_msg);
     renderer->property_text() = iter->get_value(col);
-    renderer->property_ellipsize() = TR_PANGO_ELLIPSIZE_MODE(END);
+    renderer->property_ellipsize() = Pango::EllipsizeMode::END;
     setForegroundColor(renderer, node->level);
 }
 

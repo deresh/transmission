@@ -1649,7 +1649,7 @@ void DetailsDialog::Impl::peer_page_init(Glib::RefPtr<Gtk::Builder> const& build
 
     {
         auto* r = Gtk::make_managed<Gtk::CellRendererText>();
-        r->property_ellipsize() = TR_PANGO_ELLIPSIZE_MODE(END);
+        r->property_ellipsize() = Pango::EllipsizeMode::END;
         auto* c = Gtk::make_managed<Gtk::TreeViewColumn>(_("Web Seeds"), *r);
         c->add_attribute(r->property_text(), webseed_cols.url);
         c->set_expand(true);
@@ -2369,7 +2369,7 @@ void DetailsDialog::Impl::tracker_page_init(Glib::RefPtr<Gtk::Builder> const& /*
 
     {
         auto* r = Gtk::make_managed<Gtk::CellRendererText>();
-        r->property_ellipsize() = TR_PANGO_ELLIPSIZE_MODE(END);
+        r->property_ellipsize() = Pango::EllipsizeMode::END;
         r->property_xpad() = GUI_PAD_SMALL;
         r->property_ypad() = pad;
         c->pack_start(*r, true);
