@@ -457,7 +457,7 @@ bool FilterBar::Impl::show_mode_filter_model_update()
             }
         }
 
-        status_model_update_count((row).get_iter(), hits);
+        status_model_update_count(row.get_iter(), hits);
     }
 
     return false;

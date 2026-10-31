@@ -49,7 +49,7 @@
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
 
-#if defined(GDK_WINDOWING_X11)
+#ifdef GDK_WINDOWING_X11
 #include <optional>
 
 #include <gdk/x11/gdkx.h>
@@ -509,7 +509,7 @@ bool gtr_file_trash_or_remove(std::string_view const filename, tr_error* error)
         }
         catch (Glib::Error const& e)
         {
-            error->set(e.code(), (e).what());
+            error->set(e.code(), e.what());
             gtr_message(
                 fmt::format(
                     fmt::runtime(_("Couldn't move '{path}' to trash: {error} ({error_code})")),
@@ -528,7 +528,7 @@ bool gtr_file_trash_or_remove(std::string_view const filename, tr_error* error)
         }
         catch (Glib::Error const& e)
         {
-            error->set(e.code(), (e).what());
+            error->set(e.code(), e.what());
             gtr_message(
                 fmt::format(
                     fmt::runtime(_("Couldn't remove '{path}': {error} ({error_code})")),
@@ -679,7 +679,7 @@ void gtr_combo_box_set_active_enum(Gtk::ComboBox& combo, int value)
     {
         if (row.get_value(column) == value)
         {
-            combo.set_active((row).get_iter());
+            combo.set_active(row.get_iter());
             return;
         }
     }
@@ -783,7 +783,7 @@ void gtr_widget_set_visible(Gtk::Widget& widget, bool is_visible)
 
 Gtk::Window& gtr_widget_get_window(Gtk::Widget& widget)
 {
-    if (auto* const window = dynamic_cast<Gtk::Window*>((widget).get_root()); window != nullptr)
+    if (auto* const window = dynamic_cast<Gtk::Window*>(widget.get_root()); window != nullptr)
     {
         return *window;
     }
@@ -797,7 +797,7 @@ Gtk::Window& gtr_widget_get_window(Gtk::Widget& widget)
 
 void gtr_window_set_skip_taskbar_hint([[maybe_unused]] Gtk::Window& window, [[maybe_unused]] bool value)
 {
-#if defined(GDK_WINDOWING_X11)
+#ifdef GDK_WINDOWING_X11
     if (auto* const surface = Glib::unwrap(window.get_surface()); GDK_IS_X11_SURFACE(surface))
     {
         gdk_x11_surface_set_skip_taskbar_hint(surface, value ? TRUE : FALSE);
@@ -807,7 +807,7 @@ void gtr_window_set_skip_taskbar_hint([[maybe_unused]] Gtk::Window& window, [[ma
 
 void gtr_window_set_urgency_hint([[maybe_unused]] Gtk::Window& window, [[maybe_unused]] bool value)
 {
-#if defined(GDK_WINDOWING_X11)
+#ifdef GDK_WINDOWING_X11
     if (auto* const surface = Glib::unwrap(window.get_surface()); GDK_IS_X11_SURFACE(surface))
     {
         gdk_x11_surface_set_urgency_hint(surface, value ? TRUE : FALSE);

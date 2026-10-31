@@ -150,7 +150,7 @@ bool MessageLogWindow::Impl::is_pinned_to_new() const
 
             if (auto const iter = sort_->children()[row_count - 1]; iter)
             {
-                pinned_to_new = last_visible == sort_->get_path((iter).get_iter());
+                pinned_to_new = last_visible == sort_->get_path(iter.get_iter());
             }
         }
     }
@@ -168,7 +168,7 @@ void MessageLogWindow::Impl::scroll_to_bottom()
 
     if (auto const iter = sort_->children()[row_count - 1]; iter)
     {
-        view_->scroll_to_row(sort_->get_path((iter).get_iter()), 1);
+        view_->scroll_to_row(sort_->get_path(iter.get_iter()), 1);
     }
 }
 

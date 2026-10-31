@@ -99,27 +99,24 @@ void OptionsDialog::Impl::removeOldTorrent()
 
 void OptionsDialog::Impl::addResponseCB(int response)
 {
-    if (tor_ != nullptr)
+    if (tor_ != nullptr && response == Gtk::ResponseType::ACCEPT)
     {
-        if (response == Gtk::ResponseType::ACCEPT)
+        tr_torrentSetPriority(tor_, static_cast<tr_priority_t>(gtr_combo_box_get_active_enum(*priority_combo_)));
+
+        if (run_check_->get_active())
         {
-            tr_torrentSetPriority(tor_, static_cast<tr_priority_t>(gtr_combo_box_get_active_enum(*priority_combo_)));
-
-            if (run_check_->get_active())
-            {
-                tr_torrentStart(tor_);
-            }
-
-            core_->add_torrent(Torrent::create(tor_), false);
-
-            if (trash_check_->get_active())
-            {
-                gtr_file_trash_or_remove(filename_, nullptr);
-            }
-
-            gtr_save_recent_dir("download", core_, downloadDir_);
-            tor_ = nullptr;
+            tr_torrentStart(tor_);
         }
+
+        core_->add_torrent(Torrent::create(tor_), false);
+
+        if (trash_check_->get_active())
+        {
+            gtr_file_trash_or_remove(filename_, nullptr);
+        }
+
+        gtr_save_recent_dir("download", core_, downloadDir_);
+        tor_ = nullptr;
     }
 
     dialog_.close();

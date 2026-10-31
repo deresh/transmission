@@ -118,7 +118,7 @@ int main(int argc, char** argv)
     }
     catch (Glib::OptionError const& e)
     {
-        fmt::print(stderr, "{}\n", (e).what());
+        fmt::print(stderr, "{}\n", e.what());
         fmt::print(
             stderr,
             fmt::runtime(_("Run '{program} --help' to see a full list of available command line options.\n")),
