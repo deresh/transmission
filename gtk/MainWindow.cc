@@ -39,6 +39,7 @@
 #include <gtkmm/multiselection.h>
 #include <gtkmm/popovermenu.h>
 #include <gtkmm/scrolledwindow.h>
+#include <gtkmm/stack.h>
 #include <gtkmm/togglebutton.h>
 #include <gtkmm/treemodel.h>
 #include <gtkmm/treeview.h>
@@ -616,6 +617,17 @@ MainWindow::Impl::Impl(
     /* make the window */
     toast_overlay_ = adw_compat_toast_overlay_new(gtr_get_widget<Gtk::Widget>(builder, "toolbar_view")->gobj());
     adw_compat_set_window_content(GTK_WINDOW(window.gobj()), toast_overlay_);
+
+    /* show the status page instead of the list while there are no torrents at all */
+    auto* const torrents_stack = gtr_get_widget<Gtk::Stack>(builder, "torrents_stack");
+    auto* const list_scroll = gtr_get_widget<Gtk::Widget>(builder, "torrents_view_scroll");
+    auto* const empty_page = gtr_get_widget<Gtk::Widget>(builder, "empty_page");
+    auto const update_empty_state = [core = core_, torrents_stack, list_scroll, empty_page]()
+    {
+        torrents_stack->set_visible_child(core->get_model()->get_n_items() == 0 ? *empty_page : *list_scroll);
+    };
+    core_->get_model()->signal_items_changed().connect([update_empty_state](guint, guint, guint) { update_empty_state(); });
+    update_empty_state();
 
     /* the primary menu lives in the header bar; it used to be the application menubar */
     auto* primary_menu = Gtk::make_managed<Gtk::MenuButton>();

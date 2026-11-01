@@ -118,6 +118,9 @@ horizontal]]></property>
         </object>
       </child>
       <child>
+<object class="GtkStack" id="torrents_stack">
+<property name="vexpand">1</property>
+<child>
         <object class="GtkScrolledWindow" id="torrents_view_scroll">
           <property name="vexpand">1</property>
           <property name="focusable">1</property>
@@ -134,6 +137,15 @@ horizontal]]></property>
           </style>
         </object>
       </child>
+<child>
+<object class="AdwStatusPage" id="empty_page">
+<property name="icon-name">folder-download-symbolic</property>
+<property name="title" translatable="yes">No torrents</property>
+<property name="description" translatable="yes">Open a .torrent file or paste a magnet link</property>
+</object>
+</child>
+</object>
+</child>
       
     </object>
       </child>
