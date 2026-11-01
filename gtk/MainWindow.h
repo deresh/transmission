@@ -35,6 +35,8 @@ public:
         Glib::RefPtr<Gio::ActionGroup> const& actions,
         Glib::RefPtr<Session> const& core);
 
+    void show_toast(Glib::ustring const& message);
+
     void for_each_selected_torrent(std::function<void(Glib::RefPtr<Torrent> const&)> const& callback) const;
     bool for_each_selected_torrent_until(std::function<bool(Glib::RefPtr<Torrent> const&)> const& callback) const;
 

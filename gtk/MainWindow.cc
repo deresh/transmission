@@ -110,6 +110,10 @@ private:
 
     Glib::RefPtr<Gio::MenuModel> createStatsMenu();
 
+public:
+    void show_toast(Glib::ustring const& message);
+
+private:
     void on_popup_menu(double event_x, double event_y);
 
     void onSpeedToggled(std::string const& action_name, tr_direction dir, bool enabled);
@@ -143,6 +147,7 @@ private:
     Glib::RefPtr<Gtk::MultiSelection> selection_;
 
     Gtk::ScrolledWindow* scroll_ = nullptr;
+    GtkWidget* toast_overlay_ = nullptr; // owned by the window
     TorrentView* view_ = nullptr;
     Gtk::Widget* toolbar_ = nullptr;
     FilterBar* filter_;
@@ -159,6 +164,11 @@ private:
 /***
 ****
 ***/
+
+void MainWindow::Impl::show_toast(Glib::ustring const& message)
+{
+    adw_compat_toast_show(toast_overlay_, message.c_str());
+}
 
 void MainWindow::Impl::on_popup_menu([[maybe_unused]] double event_x, [[maybe_unused]] double event_y)
 {
@@ -580,6 +590,11 @@ MainWindow::MainWindow(
 
 MainWindow::~MainWindow() = default;
 
+void MainWindow::show_toast(Glib::ustring const& message)
+{
+    impl_->show_toast(message);
+}
+
 MainWindow::Impl::Impl(
     MainWindow& window,
     Glib::RefPtr<Gtk::Builder> const& builder,
@@ -599,7 +614,8 @@ MainWindow::Impl::Impl(
     , alt_speed_button_(gtr_get_widget<Gtk::ToggleButton>(builder, "alt_speed_button"))
 {
     /* make the window */
-    adw_compat_set_window_content(GTK_WINDOW(window.gobj()), gtr_get_widget<Gtk::Widget>(builder, "toolbar_view")->gobj());
+    toast_overlay_ = adw_compat_toast_overlay_new(gtr_get_widget<Gtk::Widget>(builder, "toolbar_view")->gobj());
+    adw_compat_set_window_content(GTK_WINDOW(window.gobj()), toast_overlay_);
 
     /* the primary menu lives in the header bar; it used to be the application menubar */
     auto* primary_menu = Gtk::make_managed<Gtk::MenuButton>();

@@ -19,6 +19,19 @@ inline void adw_compat_header_pack_end(GtkWidget* header_bar, GtkWidget* child)
     adw_header_bar_pack_end(ADW_HEADER_BAR(header_bar), child);
 }
 
+// Wraps the window content so toasts can be shown over it.
+inline GtkWidget* adw_compat_toast_overlay_new(GtkWidget* child)
+{
+    GtkWidget* const overlay = adw_toast_overlay_new();
+    adw_toast_overlay_set_child(ADW_TOAST_OVERLAY(overlay), child);
+    return overlay;
+}
+
+inline void adw_compat_toast_show(GtkWidget* overlay, char const* title)
+{
+    adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(overlay), adw_toast_new(title));
+}
+
 // AdwApplicationWindow takes its content through this call; gtk_window_set_child()
 // is rejected by libadwaita for these windows.
 inline void adw_compat_set_window_content(GtkWindow* window, GtkWidget* content)

@@ -583,6 +583,14 @@ void Application::Impl::on_startup()
 
     /* create main window now to be a parent to any error dialogs */
     wind_ = MainWindow::create(app_, actions, core_);
+    core_->signal_toast().connect(
+        [this](Glib::ustring const& message)
+        {
+            if (wind_ != nullptr)
+            {
+                wind_->show_toast(message);
+            }
+        });
     wind_->property_maximized().signal_changed().connect(sigc::mem_fun(*this, &Impl::on_main_window_size_allocated));
     wind_->property_default_width().signal_changed().connect(sigc::mem_fun(*this, &Impl::on_main_window_size_allocated));
     wind_->property_default_height().signal_changed().connect(sigc::mem_fun(*this, &Impl::on_main_window_size_allocated));

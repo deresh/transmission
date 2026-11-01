@@ -180,6 +180,7 @@ public:
     sigc::signal<void(ErrorCode, Glib::ustring const&)>& signal_add_error();
     sigc::signal<void(tr_ctor*)>& signal_add_prompt();
     sigc::signal<void(bool)>& signal_blocklist_updated();
+    sigc::signal<void(Glib::ustring const&)>& signal_toast();
     sigc::signal<void(bool)>& signal_busy();
     sigc::signal<void(tr_quark)>& signal_prefs_changed();
     sigc::signal<void(std::optional<bool>, PortTestIpProtocol)>& signal_port_tested();

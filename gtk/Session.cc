@@ -109,6 +109,11 @@ public:
         return signal_blocklist_updated_;
     }
 
+    auto& signal_toast()
+    {
+        return signal_toast_;
+    }
+
     auto& signal_busy()
     {
         return signal_busy_;
@@ -175,6 +180,7 @@ private:
     sigc::signal<void(ErrorCode, Glib::ustring const&)> signal_add_error_;
     sigc::signal<void(tr_ctor*)> signal_add_prompt_;
     sigc::signal<void(bool)> signal_blocklist_updated_;
+    sigc::signal<void(Glib::ustring const&)> signal_toast_;
     sigc::signal<void(bool)> signal_busy_;
     sigc::signal<void(tr_quark)> signal_prefs_changed_;
     sigc::signal<void(std::optional<bool>, PortTestIpProtocol)> signal_port_tested_;
@@ -678,6 +684,7 @@ void Session::Impl::add_torrent(Glib::RefPtr<Torrent> const& torrent, bool do_no
         if (do_notify)
         {
             gtr_notify_torrent_added(get_core_ptr(), torrent->get_id());
+            signal_toast_.emit(fmt::format(fmt::runtime(_("Added '{name}'")), fmt::arg("name", torrent->get_name())));
         }
     }
 }
@@ -932,9 +939,11 @@ void Session::Impl::remove_torrent(tr_torrent_id_t const id, bool const delete_f
 {
     if (auto const& [torrent, position] = find_torrent_by_id(id); torrent)
     {
+        auto const name = torrent->get_name();
         get_raw_model()->remove(position);
 
         tr_torrentRemove(&torrent->get_underlying(), delete_files, gtr_file_trash_or_remove);
+        signal_toast_.emit(fmt::format(fmt::runtime(_("Removed '{name}'")), fmt::arg("name", name)));
     }
 }
 
@@ -1397,6 +1406,11 @@ sigc::signal<void(Session::ErrorCode, Glib::ustring const&)>& Session::signal_ad
 sigc::signal<void(tr_ctor*)>& Session::signal_add_prompt()
 {
     return impl_->signal_add_prompt();
+}
+
+sigc::signal<void(Glib::ustring const&)>& Session::signal_toast()
+{
+    return impl_->signal_toast();
 }
 
 sigc::signal<void(bool)>& Session::signal_blocklist_updated()
