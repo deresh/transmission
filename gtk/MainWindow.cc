@@ -5,6 +5,7 @@
 #include "MainWindow.h"
 
 #include "Actions.h"
+#include "AdwCompat.h"
 #include "FilterBar.h"
 #include "GtkCompat.h"
 #include "ListModelAdapter.h"
@@ -598,6 +599,7 @@ MainWindow::Impl::Impl(
     , alt_speed_button_(gtr_get_widget<Gtk::ToggleButton>(builder, "alt_speed_button"))
 {
     /* make the window */
+    adw_compat_set_window_content(GTK_WINDOW(window.gobj()), gtr_get_widget<Gtk::Widget>(builder, "toolbar_view")->gobj());
     window.set_title(Glib::get_application_name());
     window.set_default_size(gtr_pref_int_get<int>(TR_KEY_main_window_width), gtr_pref_int_get<int>(TR_KEY_main_window_height));
 

@@ -7,6 +7,15 @@
 
 #include <adwaita.h>
 
+#include <gtk/gtk.h>
+
 #if !ADW_CHECK_VERSION(1, 5, 0)
 #error "libadwaita 1.5 or newer is required"
 #endif
+
+// AdwApplicationWindow takes its content through this call; gtk_window_set_child()
+// is rejected by libadwaita for these windows.
+inline void adw_compat_set_window_content(GtkWindow* window, GtkWidget* content)
+{
+    adw_application_window_set_content(ADW_APPLICATION_WINDOW(window), content);
+}

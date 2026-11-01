@@ -5,6 +5,7 @@
 #include "Application.h"
 
 #include "Actions.h"
+#include "AdwCompat.h"
 #include "DetailsDialog.h"
 #include "Dialogs.h"
 #include "FilterBar.h"
@@ -571,6 +572,9 @@ void Application::Impl::on_startup()
     gtr_pref_int_set(TR_KEY_peer_port, tr_sessionGetPeerPort(session));
     core_ = Session::create(session);
 
+    /* libadwaita types must be registered before any .ui file names them */
+    adw_init();
+
     /* init the ui manager */
     ui_builder_ = Gtk::Builder::create_from_resource(gtr_get_full_resource_path("transmission-ui.xml"s));
     auto const actions = gtr_actions_init(ui_builder_, this);
@@ -861,7 +865,7 @@ void Application::Impl::on_app_exit()
     p->set_column_spacing(GUI_PAD_BIG);
     p->set_halign(Gtk::Align::CENTER);
     p->set_valign(Gtk::Align::CENTER);
-    wind_->set_child(*p);
+    adw_compat_set_window_content(GTK_WINDOW(wind_->gobj()), GTK_WIDGET(p->gobj()));
 
     auto* icon = Gtk::make_managed<Gtk::Image>();
     icon->property_icon_name() = "network-workgroup";
