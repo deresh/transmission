@@ -580,11 +580,9 @@ void Application::Impl::on_startup()
     auto const actions = gtr_actions_init(ui_builder_, this);
 
     auto const main_menu = gtr_action_get_object<Gio::Menu>("main-window-menu");
-    app_.set_menubar(main_menu);
 
     /* create main window now to be a parent to any error dialogs */
     wind_ = MainWindow::create(app_, actions, core_);
-    wind_->set_show_menubar(true);
     wind_->property_maximized().signal_changed().connect(sigc::mem_fun(*this, &Impl::on_main_window_size_allocated));
     wind_->property_default_width().signal_changed().connect(sigc::mem_fun(*this, &Impl::on_main_window_size_allocated));
     wind_->property_default_height().signal_changed().connect(sigc::mem_fun(*this, &Impl::on_main_window_size_allocated));
@@ -858,8 +856,6 @@ void Application::Impl::on_app_exit()
     refresh_actions_tag_.disconnect();
     update_model_soon_tag_.disconnect();
     timer_.disconnect();
-
-    wind_->set_show_menubar(false);
 
     auto* p = Gtk::make_managed<Gtk::Grid>();
     p->set_column_spacing(GUI_PAD_BIG);

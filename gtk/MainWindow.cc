@@ -600,6 +600,12 @@ MainWindow::Impl::Impl(
 {
     /* make the window */
     adw_compat_set_window_content(GTK_WINDOW(window.gobj()), gtr_get_widget<Gtk::Widget>(builder, "toolbar_view")->gobj());
+
+    /* the primary menu lives in the header bar; it used to be the application menubar */
+    auto* primary_menu = Gtk::make_managed<Gtk::MenuButton>();
+    primary_menu->set_icon_name("open-menu-symbolic");
+    primary_menu->set_menu_model(gtr_action_get_object<Gio::Menu>("main-window-menu"));
+    adw_compat_header_pack_end(gtr_get_widget<Gtk::Widget>(builder, "header_bar")->gobj(), GTK_WIDGET(primary_menu->gobj()));
     window.set_title(Glib::get_application_name());
     window.set_default_size(gtr_pref_int_get<int>(TR_KEY_main_window_width), gtr_pref_int_get<int>(TR_KEY_main_window_height));
 

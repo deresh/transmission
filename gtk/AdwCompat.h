@@ -13,6 +13,12 @@
 #error "libadwaita 1.5 or newer is required"
 #endif
 
+// Adds a widget to the end of an AdwHeaderBar.
+inline void adw_compat_header_pack_end(GtkWidget* header_bar, GtkWidget* child)
+{
+    adw_header_bar_pack_end(ADW_HEADER_BAR(header_bar), child);
+}
+
 // AdwApplicationWindow takes its content through this call; gtk_window_set_child()
 // is rejected by libadwaita for these windows.
 inline void adw_compat_set_window_content(GtkWindow* window, GtkWidget* content)
