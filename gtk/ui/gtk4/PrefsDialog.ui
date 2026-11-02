@@ -34,145 +34,36 @@
         </child>
         <child>
           <object class="AdwPreferencesGroup">
+            <property name="description" translatable="yes">Override normal speed limits manually or at scheduled times</property>
             <property name="title" translatable="yes">Alternative Speed Limits</property>
             <child>
-              <object class="GtkGrid" id="alt_speed_limits_section_layout">
-                <property name="row-spacing">6</property>
-                <property name="column-spacing">12</property>
-                <child>
-                  <object class="GtkBox" id="alt_speed_section_title_layout">
-                    <property name="spacing">6</property>
-                    <child>
-                      <object class="GtkImage" id="alt_speed_section_image">
-                        <property name="valign">center</property>
-                        <property name="icon-name">turtle</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="alt_speed_limits_section_comment_label">
-                        <property name="label" translatable="yes">Override normal speed limits manually or at scheduled times</property>
-                        <property name="xalign">0</property>
-                        <style>
-                          <class name="tr-small" />
-                        </style>
-                      </object>
-                    </child>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">0</property>
-                      <property name="column-span">2</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="alt_upload_limit_label">
-                    <property name="label" translatable="yes" comments="Labels a spinbutton for alternate upload speed limits">U_pload ({speed_units}):</property>
-                    <property name="use-underline">1</property>
-                    <property name="mnemonic-widget">alt_upload_limit_spin</property>
-                    <property name="xalign">0</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">1</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="alt_download_limit_label">
-                    <property name="label" translatable="yes" comments="Labels a spinbutton for alternate download speed limits">Do_wnload ({speed_units}):</property>
-                    <property name="use-underline">1</property>
-                    <property name="mnemonic-widget">alt_download_limit_spin</property>
-                    <property name="xalign">0</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">2</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkCheckButton" id="alt_schedule_time_check">
-                    <property name="label" translatable="yes">_Scheduled times:</property>
-                    <property name="focusable">1</property>
-                    <property name="valign">center</property>
-                    <property name="use-underline">1</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">3</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="alt_speed_days_label">
-                    <property name="sensitive" bind-source="alt_schedule_time_check" bind-property="active" bind-flags="sync-create">0</property>
-                    <property name="label" translatable="yes">_On days:</property>
-                    <property name="use-underline">1</property>
-                    <property name="mnemonic-widget">alt_speed_days_combo</property>
-                    <property name="xalign">0</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">4</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkSpinButton" id="alt_upload_limit_spin">
-                    <property name="focusable">1</property>
-                    <property name="hexpand">1</property>
-                    <layout>
-                      <property name="column">1</property>
-                      <property name="row">1</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkSpinButton" id="alt_download_limit_spin">
-                    <property name="focusable">1</property>
-                    <property name="hexpand">1</property>
-                    <layout>
-                      <property name="column">1</property>
-                      <property name="row">2</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkBox" id="alt_schedule_time_value_layout">
-                    <property name="hexpand">1</property>
-                    <property name="spacing">12</property>
-                    <child>
-                      <object class="GtkComboBox" id="alt_speed_start_time_combo">
-                        <property name="sensitive" bind-source="alt_schedule_time_check" bind-property="active" bind-flags="sync-create">0</property>
-                        <property name="hexpand">1</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="alt_speed_to_label">
-                        <property name="sensitive" bind-source="alt_schedule_time_check" bind-property="active" bind-flags="sync-create">0</property>
-                        <property name="label" translatable="yes" comments="Label goes between two time selectors, e.g. &quot;limit speeds from [time] to [time]&quot;">_to</property>
-                        <property name="use-underline">1</property>
-                        <property name="mnemonic-widget">alt_speed_end_time_combo</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkComboBox" id="alt_speed_end_time_combo">
-                        <property name="sensitive" bind-source="alt_schedule_time_check" bind-property="active" bind-flags="sync-create">0</property>
-                        <property name="hexpand">1</property>
-                      </object>
-                    </child>
-                    <layout>
-                      <property name="column">1</property>
-                      <property name="row">3</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkComboBox" id="alt_speed_days_combo">
-                    <property name="sensitive" bind-source="alt_schedule_time_check" bind-property="active" bind-flags="sync-create">0</property>
-                    <property name="hexpand">1</property>
-                    <layout>
-                      <property name="column">1</property>
-                      <property name="row">4</property>
-                    </layout>
-                  </object>
-                </child>
+              <object class="AdwSpinRow" id="alt_upload_limit_spin">
+                <property name="title" translatable="yes">Upload ({speed_units})</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwSpinRow" id="alt_download_limit_spin">
+                <property name="title" translatable="yes">Download ({speed_units})</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwSwitchRow" id="alt_schedule_time_check">
+                <property name="title" translatable="yes">Scheduled times</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwComboRow" id="alt_speed_start_time_combo">
+                <property name="title" translatable="yes">Start time</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwComboRow" id="alt_speed_end_time_combo">
+                <property name="title" translatable="yes">End time</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwComboRow" id="alt_speed_days_combo">
+                <property name="title" translatable="yes">On days</property>
               </object>
             </child>
           </object>
@@ -1254,10 +1145,7 @@ To add a new primary URL, add it after a blank line.</property>
     <widgets>
       <widget name="upload_limit_check" />
       <widget name="download_limit_check" />
-      <widget name="alt_upload_limit_label" />
-      <widget name="alt_download_limit_label" />
       <widget name="alt_schedule_time_check" />
-      <widget name="alt_speed_days_label" />
     </widgets>
   </object>
 </interface>

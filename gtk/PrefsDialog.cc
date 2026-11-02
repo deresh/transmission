@@ -121,8 +121,8 @@ public:
     Gtk::TextView* init_text_view(Glib::ustring const& name, tr_quark key);
     PathButton* init_chooser_button(Glib::ustring const& name, tr_quark key);
     Gtk::ComboBox* init_encryption_combo(Glib::ustring const& name, tr_quark key);
-    Gtk::ComboBox* init_time_combo(Glib::ustring const& name, tr_quark key);
-    Gtk::ComboBox* init_week_combo(Glib::ustring const& name, tr_quark key);
+    GtkWidget* init_time_row(Glib::ustring const& name, tr_quark key);
+    GtkWidget* init_week_row(Glib::ustring const& name, tr_quark key);
 
     template<typename T>
     Gtk::SpinButton* init_spin_button(Glib::ustring const& name, tr_quark const key, T const low, T const high, T const step)
@@ -303,7 +303,7 @@ PathButton* PageBase::init_chooser_button(Glib::ustring const& name, tr_quark co
 
 void PageBase::onIntComboChanged(Gtk::ComboBox& combo_box, tr_quark const key)
 {
-    core_->set_pref(key, gtr_combo_box_get_active_enum(combo_box));
+    core_->set_pref(key, static_cast<uint32_t>(gtr_combo_box_get_active_enum(combo_box)));
 }
 
 Gtk::ComboBox* PageBase::init_encryption_combo(Glib::ustring const& name, tr_quark const key)
@@ -322,49 +322,30 @@ Gtk::ComboBox* PageBase::init_encryption_combo(Glib::ustring const& name, tr_qua
     return combo;
 }
 
-Gtk::ComboBox* PageBase::init_time_combo(Glib::ustring const& name, tr_quark const key)
+GtkWidget* PageBase::init_time_row(Glib::ustring const& name, tr_quark const key)
 {
-    class TimeModelColumns : public Gtk::TreeModelColumnRecord
-    {
-    public:
-        TimeModelColumns() noexcept
-        {
-            add(offset);
-            add(title);
-        }
-
-        Gtk::TreeModelColumn<int> offset;
-        Gtk::TreeModelColumn<Glib::ustring> title;
-    };
-
-    static TimeModelColumns const time_cols;
-
-    /* build a store at 15 minute intervals */
-    auto store = Gtk::ListStore::create(time_cols);
-
+    /* one entry every 15 minutes; the selected index is the offset divided by 15 */
+    std::vector<std::string> titles;
     for (int i = 0; i < 60 * 24; i += 15)
     {
-        auto const iter = store->append();
-        (*iter)[time_cols.offset] = i;
-        (*iter)[time_cols.title] = fmt::format("{:02}:{:02}", i / 60, i % 60);
+        titles.push_back(fmt::format("{:02}:{:02}", i / 60, i % 60));
     }
 
-    /* build the widget */
-    auto* const combo = get_widget<Gtk::ComboBox>(name);
-    combo->set_model(store);
-    auto* r = Gtk::make_managed<Gtk::CellRendererText>();
-    combo->pack_start(*r, true);
-    combo->add_attribute(r->property_text(), time_cols.title);
-    combo->set_active(gtr_pref_int_get<int>(key) / 15);
-    combo->signal_changed().connect(
-        [this, combo, key]()
+    auto* const row = get_widget<Gtk::Widget>(name)->gobj();
+    adw_compat_combo_row_set_strings(row, titles);
+    adw_combo_row_set_selected(ADW_COMBO_ROW(row), static_cast<guint>(gtr_pref_int_get<int>(key) / 15));
+    adw_compat_connect_notify(
+        row,
+        "notify::selected",
+        [core = core_, row, key]()
         {
-            if (auto const iter = combo->get_active(); iter)
+            auto const selected = adw_combo_row_get_selected(ADW_COMBO_ROW(row));
+            if (selected != GTK_INVALID_LIST_POSITION)
             {
-                core_->set_pref(key, iter->get_value(time_cols.offset));
+                core->set_pref(key, static_cast<uint32_t>(selected) * 15U);
             }
         });
-    return combo;
+    return row;
 }
 
 auto PageBase::get_weekday_string(Glib::Date::Weekday weekday)
@@ -375,26 +356,53 @@ auto PageBase::get_weekday_string(Glib::Date::Weekday weekday)
     return date.format_string("%A");
 }
 
-Gtk::ComboBox* PageBase::init_week_combo(Glib::ustring const& name, tr_quark const key)
+GtkWidget* PageBase::init_week_row(Glib::ustring const& name, tr_quark const key)
 {
-    auto* const combo = get_widget<Gtk::ComboBox>(name);
-    gtr_combo_box_set_enum(
-        *combo,
+    std::vector<std::pair<std::string, int>> const items = {
+        { _("Every Day"), TR_SCHED_ALL },
+        { _("Weekdays"), TR_SCHED_WEEKDAY },
+        { _("Weekends"), TR_SCHED_WEEKEND },
+        { get_weekday_string(Glib::Date::Weekday::MONDAY), TR_SCHED_MON },
+        { get_weekday_string(Glib::Date::Weekday::TUESDAY), TR_SCHED_TUES },
+        { get_weekday_string(Glib::Date::Weekday::WEDNESDAY), TR_SCHED_WED },
+        { get_weekday_string(Glib::Date::Weekday::THURSDAY), TR_SCHED_THURS },
+        { get_weekday_string(Glib::Date::Weekday::FRIDAY), TR_SCHED_FRI },
+        { get_weekday_string(Glib::Date::Weekday::SATURDAY), TR_SCHED_SAT },
+        { get_weekday_string(Glib::Date::Weekday::SUNDAY), TR_SCHED_SUN },
+    };
+
+    std::vector<std::string> titles;
+    for (auto const& item : items)
+    {
+        titles.push_back(item.first);
+    }
+
+    auto* const row = get_widget<Gtk::Widget>(name)->gobj();
+    adw_compat_combo_row_set_strings(row, titles);
+
+    auto const value = gtr_pref_int_get<int>(key);
+    auto selected = guint{ 0 };
+    for (auto i = size_t{ 0 }; i < items.size(); ++i)
+    {
+        if (items[i].second == value)
         {
-            { _("Every Day"), TR_SCHED_ALL },
-            { _("Weekdays"), TR_SCHED_WEEKDAY },
-            { _("Weekends"), TR_SCHED_WEEKEND },
-            { get_weekday_string(Glib::Date::Weekday::MONDAY), TR_SCHED_MON },
-            { get_weekday_string(Glib::Date::Weekday::TUESDAY), TR_SCHED_TUES },
-            { get_weekday_string(Glib::Date::Weekday::WEDNESDAY), TR_SCHED_WED },
-            { get_weekday_string(Glib::Date::Weekday::THURSDAY), TR_SCHED_THURS },
-            { get_weekday_string(Glib::Date::Weekday::FRIDAY), TR_SCHED_FRI },
-            { get_weekday_string(Glib::Date::Weekday::SATURDAY), TR_SCHED_SAT },
-            { get_weekday_string(Glib::Date::Weekday::SUNDAY), TR_SCHED_SUN },
+            selected = static_cast<guint>(i);
+        }
+    }
+    adw_combo_row_set_selected(ADW_COMBO_ROW(row), selected);
+
+    adw_compat_connect_notify(
+        row,
+        "notify::selected",
+        [core = core_, row, key, items]()
+        {
+            auto const selected = adw_combo_row_get_selected(ADW_COMBO_ROW(row));
+            if (selected < items.size())
+            {
+                core->set_pref(key, static_cast<uint32_t>(items[selected].second));
+            }
         });
-    gtr_combo_box_set_active_enum(*combo, gtr_pref_int_get<int>(key));
-    combo->signal_changed().connect([this, combo, key]() { onIntComboChanged(*combo, key); });
-    return combo;
+    return row;
 }
 
 /****
@@ -888,16 +896,22 @@ SpeedPage::SpeedPage(BaseObjectType* cast_item, Glib::RefPtr<Gtk::Builder> const
         5);
     g_object_bind_property(download_switch, "active", download_spin, "sensitive", G_BINDING_SYNC_CREATE);
 
-    localize_label(*get_widget<Gtk::Label>("alt_upload_limit_label"), fmt::arg("speed_units", speed_units_kbyps_str));
-    init_spin_button<uint32_t>("alt_upload_limit_spin", TR_KEY_alt_speed_up, 0, std::numeric_limits<uint32_t>::max(), 5);
+    localize_row_title(
+        init_spin_row<uint32_t>("alt_upload_limit_spin", TR_KEY_alt_speed_up, 0, std::numeric_limits<uint32_t>::max(), 5),
+        fmt::arg("speed_units", speed_units_kbyps_str));
 
-    localize_label(*get_widget<Gtk::Label>("alt_download_limit_label"), fmt::arg("speed_units", speed_units_kbyps_str));
-    init_spin_button<uint32_t>("alt_download_limit_spin", TR_KEY_alt_speed_down, 0, std::numeric_limits<uint32_t>::max(), 5);
+    localize_row_title(
+        init_spin_row<uint32_t>("alt_download_limit_spin", TR_KEY_alt_speed_down, 0, std::numeric_limits<uint32_t>::max(), 5),
+        fmt::arg("speed_units", speed_units_kbyps_str));
 
-    init_time_combo("alt_speed_start_time_combo", TR_KEY_alt_speed_time_begin);
-    init_time_combo("alt_speed_end_time_combo", TR_KEY_alt_speed_time_end);
-    init_check_button("alt_schedule_time_check", TR_KEY_alt_speed_time_enabled);
-    init_week_combo("alt_speed_days_combo", TR_KEY_alt_speed_time_day);
+    auto* const schedule_switch = init_switch_row("alt_schedule_time_check", TR_KEY_alt_speed_time_enabled);
+    /* the schedule rows only apply while the schedule switch is on */
+    for (auto* const row : { init_time_row("alt_speed_start_time_combo", TR_KEY_alt_speed_time_begin),
+                             init_time_row("alt_speed_end_time_combo", TR_KEY_alt_speed_time_end),
+                             init_week_row("alt_speed_days_combo", TR_KEY_alt_speed_time_day) })
+    {
+        g_object_bind_property(schedule_switch, "active", row, "sensitive", G_BINDING_SYNC_CREATE);
+    }
 }
 
 /****

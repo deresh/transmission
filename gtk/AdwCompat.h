@@ -8,7 +8,9 @@
 #include <adwaita.h>
 
 #include <functional>
+#include <string>
 #include <type_traits>
+#include <vector>
 
 #include <gtk/gtk.h>
 
@@ -55,6 +57,18 @@ void adw_compat_connect_notify(gpointer instance, char const* detailed_signal, F
         data,
         [](gpointer user_data, GClosure*) { delete static_cast<Callback*>(user_data); },
         GConnectFlags{});
+}
+
+// Replaces the model of an AdwComboRow with the given strings.
+inline void adw_compat_combo_row_set_strings(GtkWidget* row, std::vector<std::string> const& strings)
+{
+    auto* const list = gtk_string_list_new(nullptr);
+    for (auto const& text : strings)
+    {
+        gtk_string_list_append(list, text.c_str());
+    }
+    adw_combo_row_set_model(ADW_COMBO_ROW(row), G_LIST_MODEL(list));
+    g_object_unref(list);
 }
 
 // AdwDialog is a GtkWidget, not a GtkWindow, so it is presented over a parent window.
