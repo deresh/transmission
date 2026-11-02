@@ -11,55 +11,23 @@
           <object class="AdwPreferencesGroup">
             <property name="title" translatable="yes">Speed Limits</property>
             <child>
-              <object class="GtkGrid" id="speed_limits_section_layout">
-                <property name="row-spacing">6</property>
-                <property name="column-spacing">12</property>
-                <child>
-                  <object class="GtkCheckButton" id="upload_limit_check">
-                    <property name="label" translatable="yes" comments="Checkbox to limit upload speed">_Upload ({speed_units}):</property>
-                    <property name="focusable">1</property>
-                    <property name="valign">center</property>
-                    <property name="use-underline">1</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">0</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkCheckButton" id="download_limit_check">
-                    <property name="label" translatable="yes" comments="Checkbox to limit download speed">_Download ({speed_units}):</property>
-                    <property name="focusable">1</property>
-                    <property name="valign">center</property>
-                    <property name="use-underline">1</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">1</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkSpinButton" id="upload_limit_spin">
-                    <property name="sensitive" bind-source="upload_limit_check" bind-property="active" bind-flags="sync-create">0</property>
-                    <property name="focusable">1</property>
-                    <property name="hexpand">1</property>
-                    <layout>
-                      <property name="column">1</property>
-                      <property name="row">0</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkSpinButton" id="download_limit_spin">
-                    <property name="sensitive" bind-source="download_limit_check" bind-property="active" bind-flags="sync-create">0</property>
-                    <property name="focusable">1</property>
-                    <property name="hexpand">1</property>
-                    <layout>
-                      <property name="column">1</property>
-                      <property name="row">1</property>
-                    </layout>
-                  </object>
-                </child>
+              <object class="AdwSwitchRow" id="upload_limit_check">
+                <property name="title" translatable="yes">Upload ({speed_units})</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwSpinRow" id="upload_limit_spin">
+                <property name="title" translatable="yes">Upload limit</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwSwitchRow" id="download_limit_check">
+                <property name="title" translatable="yes">Download ({speed_units})</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwSpinRow" id="download_limit_spin">
+                <property name="title" translatable="yes">Download limit</property>
               </object>
             </child>
           </object>

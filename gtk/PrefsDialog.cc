@@ -5,6 +5,7 @@
 
 #include "PrefsDialog.h"
 
+#include "AdwCompat.h"
 #include "FreeSpaceLabel.h"
 #include "GtkCompat.h"
 #include "PathButton.h"
@@ -88,6 +89,34 @@ public:
     ~PageBase() override;
 
     Gtk::CheckButton* init_check_button(Glib::ustring const& name, tr_quark key);
+    GtkWidget* init_switch_row(Glib::ustring const& name, tr_quark key);
+
+    // Titles of rows may contain {placeholders}, filled in at runtime.
+    template<typename... ArgTs>
+    static void localize_row_title(GtkWidget* row, ArgTs&&... args)
+    {
+        auto const title = fmt::format(
+            fmt::runtime(adw_preferences_row_get_title(ADW_PREFERENCES_ROW(row))),
+            std::forward<ArgTs>(args)...);
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(row), title.c_str());
+    }
+
+    template<typename T>
+    GtkWidget* init_spin_row(Glib::ustring const& name, tr_quark const key, T const low, T const high, T const step)
+    {
+        auto* const row = get_widget<Gtk::Widget>(name)->gobj();
+        auto const adjustment = Gtk::Adjustment::create(
+            static_cast<double>(gtr_pref_get<T>(key)),
+            static_cast<double>(low),
+            static_cast<double>(high),
+            static_cast<double>(step));
+        adw_spin_row_set_adjustment(ADW_SPIN_ROW(row), adjustment->gobj());
+        adw_spin_row_set_digits(ADW_SPIN_ROW(row), std::is_floating_point_v<T> ? 2 : 0);
+        // The row owns the adjustment; keep a raw pointer so the handler does not hold a reference cycle.
+        auto* const raw = adjustment.get();
+        raw->signal_value_changed().connect([raw, key]() { gtr_pref_set(key, static_cast<T>(raw->get_value())); });
+        return row;
+    }
     Gtk::Entry* init_entry(Glib::ustring const& name, tr_quark key);
     Gtk::TextView* init_text_view(Glib::ustring const& name, tr_quark key);
     PathButton* init_chooser_button(Glib::ustring const& name, tr_quark key);
@@ -196,6 +225,17 @@ PageBase::~PageBase()
     {
         info.second.disconnect();
     }
+}
+
+GtkWidget* PageBase::init_switch_row(Glib::ustring const& name, tr_quark const key)
+{
+    auto* const row = get_widget<Gtk::Widget>(name)->gobj();
+    adw_switch_row_set_active(ADW_SWITCH_ROW(row), gtr_pref_flag_get(key));
+    adw_compat_connect_notify(
+        row,
+        "notify::active",
+        [row, key]() { gtr_pref_flag_set(key, adw_switch_row_get_active(ADW_SWITCH_ROW(row))); });
+    return row;
 }
 
 Gtk::CheckButton* PageBase::init_check_button(Glib::ustring const& name, tr_quark const key)
@@ -828,15 +868,25 @@ SpeedPage::SpeedPage(BaseObjectType* cast_item, Glib::RefPtr<Gtk::Builder> const
 {
     auto const speed_units_kbyps_str = Speed::units().display_name(Speed::Units::KByps);
 
-    localize_label(
-        *init_check_button("upload_limit_check", TR_KEY_speed_limit_up_enabled),
-        fmt::arg("speed_units", speed_units_kbyps_str));
-    init_spin_button<uint32_t>("upload_limit_spin", TR_KEY_speed_limit_up, 0, std::numeric_limits<uint32_t>::max(), 5);
+    auto* const upload_switch = init_switch_row("upload_limit_check", TR_KEY_speed_limit_up_enabled);
+    localize_row_title(upload_switch, fmt::arg("speed_units", speed_units_kbyps_str));
+    auto* const upload_spin = init_spin_row<uint32_t>(
+        "upload_limit_spin",
+        TR_KEY_speed_limit_up,
+        0,
+        std::numeric_limits<uint32_t>::max(),
+        5);
+    g_object_bind_property(upload_switch, "active", upload_spin, "sensitive", G_BINDING_SYNC_CREATE);
 
-    localize_label(
-        *init_check_button("download_limit_check", TR_KEY_speed_limit_down_enabled),
-        fmt::arg("speed_units", speed_units_kbyps_str));
-    init_spin_button<uint32_t>("download_limit_spin", TR_KEY_speed_limit_down, 0, std::numeric_limits<uint32_t>::max(), 5);
+    auto* const download_switch = init_switch_row("download_limit_check", TR_KEY_speed_limit_down_enabled);
+    localize_row_title(download_switch, fmt::arg("speed_units", speed_units_kbyps_str));
+    auto* const download_spin = init_spin_row<uint32_t>(
+        "download_limit_spin",
+        TR_KEY_speed_limit_down,
+        0,
+        std::numeric_limits<uint32_t>::max(),
+        5);
+    g_object_bind_property(download_switch, "active", download_spin, "sensitive", G_BINDING_SYNC_CREATE);
 
     localize_label(*get_widget<Gtk::Label>("alt_upload_limit_label"), fmt::arg("speed_units", speed_units_kbyps_str));
     init_spin_button<uint32_t>("alt_upload_limit_spin", TR_KEY_alt_speed_up, 0, std::numeric_limits<uint32_t>::max(), 5);

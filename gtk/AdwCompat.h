@@ -42,6 +42,21 @@ inline void adw_compat_set_window_content(GtkWindow* window, GtkWidget* content)
     adw_application_window_set_content(ADW_APPLICATION_WINDOW(window), content);
 }
 
+// Connects a handler that takes no arguments to a notify::* signal.
+template<typename F>
+void adw_compat_connect_notify(gpointer instance, char const* detailed_signal, F&& callback)
+{
+    using Callback = std::decay_t<F>;
+    auto* const data = new Callback(std::forward<F>(callback));
+    g_signal_connect_data(
+        instance,
+        detailed_signal,
+        G_CALLBACK(+[](gpointer, GParamSpec*, gpointer user_data) { (*static_cast<Callback*>(user_data))(); }),
+        data,
+        [](gpointer user_data, GClosure*) { delete static_cast<Callback*>(user_data); },
+        GConnectFlags{});
+}
+
 // AdwDialog is a GtkWidget, not a GtkWindow, so it is presented over a parent window.
 inline void adw_compat_dialog_present(GtkWidget* dialog, GtkWidget* parent)
 {
