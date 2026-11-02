@@ -65,8 +65,6 @@ public:
     ~Impl() = default;
 
 private:
-    void response_cb(int response);
-
 private:
     PrefsDialog& dialog_;
     Glib::RefPtr<Session> const core_;
@@ -76,23 +74,10 @@ private:
 ***
 **/
 
-void PrefsDialog::Impl::response_cb(int response)
-{
-    if (response == Gtk::ResponseType::HELP)
-    {
-        gtr_open_uri(gtr_get_help_uri() + "/html/preferences.html");
-    }
-
-    if (response == Gtk::ResponseType::CLOSE)
-    {
-        dialog_.close();
-    }
-}
-
 namespace
 {
 
-class PageBase : public Gtk::Box
+class PageBase : public Gtk::Widget
 {
 public:
     PageBase(BaseObjectType* cast_item, Glib::RefPtr<Gtk::Builder> const& builder, Glib::RefPtr<Session> const& core);
@@ -199,7 +184,7 @@ private:
 };
 
 PageBase::PageBase(BaseObjectType* cast_item, Glib::RefPtr<Gtk::Builder> const& builder, Glib::RefPtr<Session> const& core)
-    : Gtk::Box(cast_item)
+    : Gtk::Widget(cast_item)
     , builder_(builder)
     , core_(core)
 {
@@ -1058,21 +1043,19 @@ NetworkPage::NetworkPage(
 *****
 ****/
 
-std::unique_ptr<PrefsDialog> PrefsDialog::create(Gtk::Window& parent, Glib::RefPtr<Session> const& core)
+std::unique_ptr<PrefsDialog> PrefsDialog::create(Glib::RefPtr<Session> const& core)
 {
     auto const builder = Gtk::Builder::create_from_resource(gtr_get_full_resource_path("PrefsDialog.ui"));
-    return std::unique_ptr<PrefsDialog>(gtr_get_widget_derived<PrefsDialog>(builder, "PrefsDialog", parent, core));
+    return std::unique_ptr<PrefsDialog>(gtr_get_widget_derived<PrefsDialog>(builder, "PrefsDialog", core));
 }
 
 PrefsDialog::PrefsDialog(
     BaseObjectType* cast_item,
     Glib::RefPtr<Gtk::Builder> const& builder,
-    Gtk::Window& parent,
     Glib::RefPtr<Session> const& core)
-    : Gtk::Dialog(cast_item)
+    : Gtk::Widget(cast_item)
     , impl_(std::make_unique<Impl>(*this, builder, core))
 {
-    set_transient_for(parent);
 }
 
 PrefsDialog::~PrefsDialog() = default;
@@ -1088,6 +1071,4 @@ PrefsDialog::Impl::Impl(PrefsDialog& dialog, Glib::RefPtr<Gtk::Builder> const& b
     gtr_get_widget_derived<NetworkPage>(builder, "network_page_layout", core_);
     gtr_get_widget_derived<DesktopPage>(builder, "desktop_page_layout", core_);
     gtr_get_widget_derived<RemotePage>(builder, "remote_page_layout", core_);
-
-    dialog_.signal_response().connect(sigc::mem_fun(*this, &Impl::response_cb));
 }

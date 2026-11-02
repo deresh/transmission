@@ -7,6 +7,9 @@
 
 #include <adwaita.h>
 
+#include <functional>
+#include <type_traits>
+
 #include <gtk/gtk.h>
 
 #if !ADW_CHECK_VERSION(1, 5, 0)
@@ -37,4 +40,25 @@ inline void adw_compat_toast_show(GtkWidget* overlay, char const* title)
 inline void adw_compat_set_window_content(GtkWindow* window, GtkWidget* content)
 {
     adw_application_window_set_content(ADW_APPLICATION_WINDOW(window), content);
+}
+
+// AdwDialog is a GtkWidget, not a GtkWindow, so it is presented over a parent window.
+inline void adw_compat_dialog_present(GtkWidget* dialog, GtkWidget* parent)
+{
+    adw_dialog_present(ADW_DIALOG(dialog), parent);
+}
+
+// Runs callback once the dialog has closed. The callback is owned by the signal connection.
+template<typename F>
+void adw_compat_dialog_on_closed(GtkWidget* dialog, F&& callback)
+{
+    using Callback = std::decay_t<F>;
+    auto* const data = new Callback(std::forward<F>(callback));
+    g_signal_connect_data(
+        dialog,
+        "closed",
+        G_CALLBACK(+[](AdwDialog*, gpointer user_data) { (*static_cast<Callback*>(user_data))(); }),
+        data,
+        [](gpointer user_data, GClosure*) { delete static_cast<Callback*>(user_data); },
+        GConnectFlags{});
 }

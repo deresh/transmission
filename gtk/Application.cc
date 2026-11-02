@@ -1460,11 +1460,11 @@ void Application::Impl::actions_handler(Glib::ustring const& action_name)
     {
         if (prefs_ == nullptr)
         {
-            prefs_ = PrefsDialog::create(*wind_, core_);
-            gtr_window_on_close(*prefs_, [this]() { prefs_.reset(); });
+            prefs_ = PrefsDialog::create(core_);
+            adw_compat_dialog_on_closed(prefs_->gobj(), [this]() { prefs_.reset(); });
         }
 
-        gtr_window_present(prefs_);
+        adw_compat_dialog_present(prefs_->gobj(), GTK_WIDGET(wind_->gobj()));
     }
     else if (action_name == "toggle-message-log")
     {
