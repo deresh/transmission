@@ -245,30 +245,8 @@
           <object class="AdwPreferencesGroup">
             <property name="title" translatable="yes">Privacy</property>
             <child>
-              <object class="GtkGrid" id="privacy_section_layout">
-                <property name="row-spacing">6</property>
-                <property name="column-spacing">12</property>
-                <child>
-                  <object class="GtkLabel" id="encryption_mode_label">
-                    <property name="label" translatable="yes">_Encryption mode:</property>
-                    <property name="use-underline">1</property>
-                    <property name="mnemonic-widget">encryption_mode_combo</property>
-                    <property name="xalign">0</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">0</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkComboBox" id="encryption_mode_combo">
-                    <property name="hexpand">1</property>
-                    <layout>
-                      <property name="column">1</property>
-                      <property name="row">0</property>
-                    </layout>
-                  </object>
-                </child>
+              <object class="AdwComboRow" id="encryption_mode_combo">
+                <property name="title" translatable="yes">Encryption mode</property>
               </object>
             </child>
           </object>
@@ -277,85 +255,50 @@
           <object class="AdwPreferencesGroup">
             <property name="title" translatable="yes">Blocklist</property>
             <child>
-              <object class="GtkGrid" id="blocklist_section_layout">
-                <property name="row-spacing">6</property>
-                <property name="column-spacing">12</property>
-                <child>
-                  <object class="GtkCheckButton" id="blocklist_check">
-                    <property name="label" translatable="yes">Enable _blocklist:</property>
-                    <property name="focusable">1</property>
-                    <property name="valign">center</property>
-                    <property name="use-underline">1</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">0</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkCheckButton" id="blocklist_autoupdate_check">
-                    <property name="sensitive" bind-source="blocklist_check" bind-property="active" bind-flags="sync-create">0</property>
-                    <property name="label" translatable="yes">Enable _automatic updates</property>
-                    <property name="focusable">1</property>
-                    <property name="valign">center</property>
-                    <property name="hexpand">1</property>
-                    <property name="use-underline">1</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">2</property>
-                      <property name="column-span">2</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
+              <object class="AdwSwitchRow" id="blocklist_check">
+                <property name="title" translatable="yes">Enable blocklist</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwSwitchRow" id="blocklist_autoupdate_check">
+                <property name="title" translatable="yes">Enable automatic updates</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow">
+                <property name="title" translatable="yes">Blocklist URL</property>
+                <child type="suffix">
                   <object class="GtkEntry" id="blocklist_url_entry">
                     <property name="sensitive" bind-source="blocklist_check" bind-property="active" bind-flags="sync-create">0</property>
                     <property name="width-request">300</property>
                     <property name="focusable">1</property>
                     <property name="hexpand">1</property>
-                    <layout>
-                      <property name="column">1</property>
-                      <property name="row">0</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkBox" id="blocklist_info_layout">
                     <property name="hexpand">1</property>
-                    <property name="spacing">12</property>
-                    <child>
-                      <object class="GtkLabel" id="blocklist_stats_label">
-                        <property name="sensitive" bind-source="blocklist_check" bind-property="active" bind-flags="sync-create">0</property>
-                        <property name="hexpand">1</property>
-                        <property name="label">...</property>
-                        <property name="xalign">0</property>
-                        <attributes>
-                          <attribute name="style" value="italic" />
-                        </attributes>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkButton" id="update_blocklist_button">
-                        <property name="label" translatable="yes">_Update</property>
-                        <property name="focusable">1</property>
-                        <property name="receives-default">1</property>
-                        <property name="use-underline">1</property>
-                      </object>
-                    </child>
-                    <layout>
-                      <property name="column">1</property>
-                      <property name="row">1</property>
-                    </layout>
+                    <property name="valign">center</property>
                   </object>
                 </child>
-                <child>
-                  <object class="GtkFixed">
-                    <property name="width-request">0</property>
-                    <property name="height-request">0</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">1</property>
-                    </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="blocklist_stats_label">
+                <property name="sensitive" bind-source="blocklist_check" bind-property="active" bind-flags="sync-create">0</property>
+                <property name="hexpand">1</property>
+                <property name="label">...</property>
+                <property name="xalign">0</property>
+                <attributes>
+                  <attribute name="style" value="italic" />
+                </attributes>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow">
+                <property name="title" translatable="yes">Update blocklist</property>
+                <child type="suffix">
+                  <object class="GtkButton" id="update_blocklist_button">
+                    <property name="label" translatable="yes">_Update</property>
+                    <property name="focusable">1</property>
+                    <property name="receives-default">1</property>
+                    <property name="use-underline">1</property>
                   </object>
                 </child>
               </object>
@@ -965,7 +908,6 @@ To add a new primary URL, add it after a blank line.</property>
   </object>
   <object class="GtkSizeGroup" id="privacy_page_labels_width_group">
     <widgets>
-      <widget name="encryption_mode_label" />
       <widget name="blocklist_check" />
     </widgets>
   </object>

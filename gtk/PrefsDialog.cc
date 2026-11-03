@@ -120,7 +120,12 @@ public:
     Gtk::Entry* init_entry(Glib::ustring const& name, tr_quark key);
     Gtk::TextView* init_text_view(Glib::ustring const& name, tr_quark key);
     PathButton* init_chooser_button(Glib::ustring const& name, tr_quark key);
-    Gtk::ComboBox* init_encryption_combo(Glib::ustring const& name, tr_quark key);
+    GtkWidget* init_encryption_row(Glib::ustring const& name, tr_quark key);
+    GtkWidget* init_choice_row(
+        Glib::ustring const& name,
+        tr_quark key,
+        std::vector<std::pair<std::string, int>> const& items,
+        int current);
     GtkWidget* init_time_row(Glib::ustring const& name, tr_quark key);
     GtkWidget* init_week_row(Glib::ustring const& name, tr_quark key);
 
@@ -306,20 +311,57 @@ void PageBase::onIntComboChanged(Gtk::ComboBox& combo_box, tr_quark const key)
     core_->set_pref(key, static_cast<uint32_t>(gtr_combo_box_get_active_enum(combo_box)));
 }
 
-Gtk::ComboBox* PageBase::init_encryption_combo(Glib::ustring const& name, tr_quark const key)
+GtkWidget* PageBase::init_choice_row(
+    Glib::ustring const& name,
+    tr_quark const key,
+    std::vector<std::pair<std::string, int>> const& items,
+    int const current)
 {
-    auto* const combo = get_widget<Gtk::ComboBox>(name);
-    gtr_combo_box_set_enum(
-        *combo,
+    std::vector<std::string> titles;
+    for (auto const& item : items)
+    {
+        titles.push_back(item.first);
+    }
+
+    auto* const row = get_widget<Gtk::Widget>(name)->gobj();
+    adw_compat_combo_row_set_strings(row, titles);
+
+    auto selected = guint{ 0 };
+    for (auto i = size_t{ 0 }; i < items.size(); ++i)
+    {
+        if (items[i].second == current)
+        {
+            selected = static_cast<guint>(i);
+        }
+    }
+    adw_combo_row_set_selected(ADW_COMBO_ROW(row), selected);
+
+    adw_compat_connect_notify(
+        row,
+        "notify::selected",
+        [core = core_, row, key, items]()
+        {
+            auto const selected = adw_combo_row_get_selected(ADW_COMBO_ROW(row));
+            if (selected < items.size())
+            {
+                core->set_pref(key, static_cast<uint32_t>(items[selected].second));
+            }
+        });
+    return row;
+}
+
+GtkWidget* PageBase::init_encryption_row(Glib::ustring const& name, tr_quark const key)
+{
+    auto const mode = gtr_pref_get<tr_encryption_mode>(key, TR_ENCRYPTION_PREFERRED);
+    return init_choice_row(
+        name,
+        key,
         {
             { _("Allow encryption"), TR_CLEAR_PREFERRED },
             { _("Prefer encryption"), TR_ENCRYPTION_PREFERRED },
             { _("Require encryption"), TR_ENCRYPTION_REQUIRED },
-        });
-    auto const mode = gtr_pref_get<tr_encryption_mode>(key, TR_ENCRYPTION_PREFERRED);
-    gtr_combo_box_set_active_enum(*combo, static_cast<int>(mode));
-    combo->signal_changed().connect([this, combo, key]() { onIntComboChanged(*combo, key); });
-    return combo;
+        },
+        static_cast<int>(mode));
 }
 
 GtkWidget* PageBase::init_time_row(Glib::ustring const& name, tr_quark const key)
@@ -358,51 +400,22 @@ auto PageBase::get_weekday_string(Glib::Date::Weekday weekday)
 
 GtkWidget* PageBase::init_week_row(Glib::ustring const& name, tr_quark const key)
 {
-    std::vector<std::pair<std::string, int>> const items = {
-        { _("Every Day"), TR_SCHED_ALL },
-        { _("Weekdays"), TR_SCHED_WEEKDAY },
-        { _("Weekends"), TR_SCHED_WEEKEND },
-        { get_weekday_string(Glib::Date::Weekday::MONDAY), TR_SCHED_MON },
-        { get_weekday_string(Glib::Date::Weekday::TUESDAY), TR_SCHED_TUES },
-        { get_weekday_string(Glib::Date::Weekday::WEDNESDAY), TR_SCHED_WED },
-        { get_weekday_string(Glib::Date::Weekday::THURSDAY), TR_SCHED_THURS },
-        { get_weekday_string(Glib::Date::Weekday::FRIDAY), TR_SCHED_FRI },
-        { get_weekday_string(Glib::Date::Weekday::SATURDAY), TR_SCHED_SAT },
-        { get_weekday_string(Glib::Date::Weekday::SUNDAY), TR_SCHED_SUN },
-    };
-
-    std::vector<std::string> titles;
-    for (auto const& item : items)
-    {
-        titles.push_back(item.first);
-    }
-
-    auto* const row = get_widget<Gtk::Widget>(name)->gobj();
-    adw_compat_combo_row_set_strings(row, titles);
-
-    auto const value = gtr_pref_int_get<int>(key);
-    auto selected = guint{ 0 };
-    for (auto i = size_t{ 0 }; i < items.size(); ++i)
-    {
-        if (items[i].second == value)
+    return init_choice_row(
+        name,
+        key,
         {
-            selected = static_cast<guint>(i);
-        }
-    }
-    adw_combo_row_set_selected(ADW_COMBO_ROW(row), selected);
-
-    adw_compat_connect_notify(
-        row,
-        "notify::selected",
-        [core = core_, row, key, items]()
-        {
-            auto const selected = adw_combo_row_get_selected(ADW_COMBO_ROW(row));
-            if (selected < items.size())
-            {
-                core->set_pref(key, static_cast<uint32_t>(items[selected].second));
-            }
-        });
-    return row;
+            { _("Every Day"), TR_SCHED_ALL },
+            { _("Weekdays"), TR_SCHED_WEEKDAY },
+            { _("Weekends"), TR_SCHED_WEEKEND },
+            { get_weekday_string(Glib::Date::Weekday::MONDAY), TR_SCHED_MON },
+            { get_weekday_string(Glib::Date::Weekday::TUESDAY), TR_SCHED_TUES },
+            { get_weekday_string(Glib::Date::Weekday::WEDNESDAY), TR_SCHED_WED },
+            { get_weekday_string(Glib::Date::Weekday::THURSDAY), TR_SCHED_THURS },
+            { get_weekday_string(Glib::Date::Weekday::FRIDAY), TR_SCHED_FRI },
+            { get_weekday_string(Glib::Date::Weekday::SATURDAY), TR_SCHED_SAT },
+            { get_weekday_string(Glib::Date::Weekday::SUNDAY), TR_SCHED_SUN },
+        },
+        gtr_pref_int_get<int>(key));
 }
 
 /****
@@ -573,7 +586,6 @@ private:
 
     Gtk::Button* updateBlocklistButton_ = nullptr;
     Gtk::Label* label_ = nullptr;
-    Gtk::CheckButton* check_ = nullptr;
 
     sigc::connection updateBlocklistTag_;
     sigc::connection blocklist_update_result_tag_;
@@ -631,20 +643,20 @@ PrivacyPage::PrivacyPage(
     , core_(core)
     , updateBlocklistButton_(get_widget<Gtk::Button>("update_blocklist_button"))
     , label_(get_widget<Gtk::Label>("blocklist_stats_label"))
-    , check_(init_check_button("blocklist_check", TR_KEY_blocklist_enabled))
 {
-    init_encryption_combo("encryption_mode_combo", TR_KEY_encryption);
+    init_encryption_row("encryption_mode_combo", TR_KEY_encryption);
+    auto* const blocklist_switch = init_switch_row("blocklist_check", TR_KEY_blocklist_enabled);
 
     auto* const blocklist_url_entry = init_entry("blocklist_url_entry", TR_KEY_blocklist_url);
 
     updateBlocklistText();
     updateBlocklistButton_->signal_clicked().connect([this]() { onBlocklistUpdate(); });
-    updateBlocklistButton_->set_sensitive(check_->get_active());
+    updateBlocklistButton_->set_sensitive(adw_switch_row_get_active(ADW_SWITCH_ROW(blocklist_switch)));
     blocklist_url_entry->signal_changed().connect([this, blocklist_url_entry]()
                                                   { on_blocklist_url_changed(blocklist_url_entry); });
     on_blocklist_url_changed(blocklist_url_entry);
 
-    init_check_button("blocklist_autoupdate_check", TR_KEY_blocklist_updates_enabled);
+    init_switch_row("blocklist_autoupdate_check", TR_KEY_blocklist_updates_enabled);
 
     updateBlocklistTag_ = core_->signal_blocklist_updated().connect(sigc::mem_fun(*this, &PrivacyPage::onBlocklistUpdated));
 }
