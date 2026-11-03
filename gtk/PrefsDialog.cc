@@ -454,28 +454,28 @@ DownloadingPage::DownloadingPage(
 {
     core_prefs_tag_ = core_->signal_prefs_changed().connect(sigc::mem_fun(*this, &DownloadingPage::on_core_prefs_changed));
 
-    init_check_button("watch_dir_check", TR_KEY_watch_dir_enabled);
+    init_switch_row("watch_dir_check", TR_KEY_watch_dir_enabled);
     init_chooser_button("watch_dir_chooser", TR_KEY_watch_dir);
-    init_check_button("show_options_dialog_check", TR_KEY_show_options_window);
-    init_check_button("start_on_add_check", TR_KEY_start_added_torrents);
-    init_check_button("trash_on_add_check", TR_KEY_trash_original_torrent_files);
+    init_switch_row("show_options_dialog_check", TR_KEY_show_options_window);
+    init_switch_row("start_on_add_check", TR_KEY_start_added_torrents);
+    init_switch_row("trash_on_add_check", TR_KEY_trash_original_torrent_files);
     init_chooser_button("download_dir_chooser", TR_KEY_download_dir);
-    init_spin_button<uint16_t>(
+    init_spin_row<uint16_t>(
         "max_active_downloads_spin",
         TR_KEY_download_queue_size,
         0,
         std::numeric_limits<uint16_t>::max(),
         1);
-    init_spin_button<uint16_t>(
+    init_spin_row<uint16_t>(
         "max_inactive_time_spin",
         TR_KEY_queue_stalled_minutes,
         1,
         std::numeric_limits<uint16_t>::max(),
         15);
-    init_check_button("append_suffix_to_incomplete_check", TR_KEY_rename_partial_files);
-    init_check_button("incomplete_dir_check", TR_KEY_incomplete_dir_enabled);
+    init_switch_row("append_suffix_to_incomplete_check", TR_KEY_rename_partial_files);
+    init_switch_row("incomplete_dir_check", TR_KEY_incomplete_dir_enabled);
     init_chooser_button("incomplete_dir_chooser", TR_KEY_incomplete_dir);
-    init_check_button("download_done_script_check", TR_KEY_script_torrent_done_enabled);
+    init_switch_row("download_done_script_check", TR_KEY_script_torrent_done_enabled);
     init_chooser_button("download_done_script_chooser", TR_KEY_script_torrent_done_filename);
 
     on_core_prefs_changed(TR_KEY_download_dir);

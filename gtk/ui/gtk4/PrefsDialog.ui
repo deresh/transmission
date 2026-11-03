@@ -78,118 +78,54 @@
           <object class="AdwPreferencesGroup">
             <property name="title" translatable="yes">Adding</property>
             <child>
-              <object class="GtkGrid" id="adding_section_layout">
-                <property name="row-spacing">6</property>
-                <property name="column-spacing">12</property>
-                <child>
-                  <object class="GtkCheckButton" id="watch_dir_check">
-                    <property name="label" translatable="yes">Automatically add torrent files _from:</property>
-                    <property name="focusable">1</property>
-                    <property name="valign">center</property>
-                    <property name="use-underline">1</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">0</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkCheckButton" id="show_options_dialog_check">
-                    <property name="label" translatable="yes">Show the Torrent Options _dialog</property>
-                    <property name="focusable">1</property>
-                    <property name="valign">center</property>
-                    <property name="hexpand">1</property>
-                    <property name="use-underline">1</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">1</property>
-                      <property name="column-span">2</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkCheckButton" id="start_on_add_check">
-                    <property name="label" translatable="yes">_Start added torrents</property>
-                    <property name="focusable">1</property>
-                    <property name="valign">center</property>
-                    <property name="hexpand">1</property>
-                    <property name="use-underline">1</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">2</property>
-                      <property name="column-span">2</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkCheckButton" id="trash_on_add_check">
-                    <property name="label" translatable="yes">Mo_ve torrent file to the trash</property>
-                    <property name="focusable">1</property>
-                    <property name="valign">center</property>
-                    <property name="hexpand">1</property>
-                    <property name="use-underline">1</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">3</property>
-                      <property name="column-span">2</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="download_dir_label">
-                    <property name="label" translatable="yes">Save to _Location:</property>
-                    <property name="use-underline">1</property>
-                    <property name="mnemonic-widget">download_dir_chooser</property>
-                    <property name="xalign">0</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">4</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
+              <object class="AdwSwitchRow" id="watch_dir_check">
+                <property name="title" translatable="yes">Automatically add torrent files from</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow">
+                <property name="title" translatable="yes">Watch folder</property>
+                <child type="suffix">
                   <object class="gtkmm__CustomObject_10PathButton" id="watch_dir_chooser">
                     <property name="sensitive" bind-source="watch_dir_check" bind-property="active" bind-flags="sync-create">0</property>
                     <property name="hexpand">1</property>
                     <property name="action">select-folder</property>
-                    <layout>
-                      <property name="column">1</property>
-                      <property name="row">0</property>
-                    </layout>
                   </object>
                 </child>
-                <child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwSwitchRow" id="show_options_dialog_check">
+                <property name="title" translatable="yes">Show the Torrent Options dialog</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwSwitchRow" id="start_on_add_check">
+                <property name="title" translatable="yes">Start added torrents</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwSwitchRow" id="trash_on_add_check">
+                <property name="title" translatable="yes">Move torrent file to the trash</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow">
+                <property name="title" translatable="yes">Save to location</property>
+                <child type="suffix">
                   <object class="gtkmm__CustomObject_10PathButton" id="download_dir_chooser">
                     <property name="action">select-folder</property>
-                    <layout>
-                      <property name="column">1</property>
-                      <property name="row">4</property>
-                    </layout>
                   </object>
                 </child>
-                <child>
-                  <object class="GtkLabel" id="download_dir_stats_label">
-                    <property name="label">...</property>
-                    <property name="xalign">0</property>
-                    <attributes>
-                      <attribute name="style" value="italic" />
-                    </attributes>
-                    <layout>
-                      <property name="column">1</property>
-                      <property name="row">5</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkFixed">
-                    <property name="width-request">0</property>
-                    <property name="height-request">0</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">5</property>
-                    </layout>
-                  </object>
-                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="download_dir_stats_label">
+                <property name="label">...</property>
+                <property name="xalign">0</property>
+                <attributes>
+                  <attribute name="style" value="italic" />
+                </attributes>
               </object>
             </child>
           </object>
@@ -198,53 +134,13 @@
           <object class="AdwPreferencesGroup">
             <property name="title" translatable="yes">Download Queue</property>
             <child>
-              <object class="GtkGrid" id="download_queue_section_layout">
-                <property name="row-spacing">6</property>
-                <property name="column-spacing">12</property>
-                <child>
-                  <object class="GtkLabel" id="max_active_downloads_label">
-                    <property name="label" translatable="yes">Ma_ximum active downloads:</property>
-                    <property name="use-underline">1</property>
-                    <property name="mnemonic-widget">max_active_downloads_spin</property>
-                    <property name="xalign">0</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">0</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="max_inactive_time_label">
-                    <property name="label" translatable="yes">Downloads sharing data in the last _N minutes are active:</property>
-                    <property name="use-underline">1</property>
-                    <property name="mnemonic-widget">max_inactive_time_spin</property>
-                    <property name="xalign">0</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">1</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkSpinButton" id="max_active_downloads_spin">
-                    <property name="focusable">1</property>
-                    <property name="hexpand">1</property>
-                    <layout>
-                      <property name="column">1</property>
-                      <property name="row">0</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkSpinButton" id="max_inactive_time_spin">
-                    <property name="focusable">1</property>
-                    <property name="hexpand">1</property>
-                    <layout>
-                      <property name="column">1</property>
-                      <property name="row">1</property>
-                    </layout>
-                  </object>
-                </child>
+              <object class="AdwSpinRow" id="max_active_downloads_spin">
+                <property name="title" translatable="yes">Maximum active downloads</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwSpinRow" id="max_inactive_time_spin">
+                <property name="title" translatable="yes">Downloads sharing data in the last N minutes are active</property>
               </object>
             </child>
           </object>
@@ -253,66 +149,39 @@
           <object class="AdwPreferencesGroup">
             <property name="title" translatable="yes">Incomplete</property>
             <child>
-              <object class="GtkGrid" id="incomplete_section_layout">
-                <property name="row-spacing">6</property>
-                <property name="column-spacing">12</property>
-                <child>
-                  <object class="GtkCheckButton" id="append_suffix_to_incomplete_check">
-                    <property name="label" translatable="yes">Append "._part" to incomplete files' names</property>
-                    <property name="focusable">1</property>
-                    <property name="valign">center</property>
-                    <property name="hexpand">1</property>
-                    <property name="use-underline">1</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">0</property>
-                      <property name="column-span">2</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkCheckButton" id="incomplete_dir_check">
-                    <property name="label" translatable="yes">Keep _incomplete torrents in:</property>
-                    <property name="focusable">1</property>
-                    <property name="valign">center</property>
-                    <property name="use-underline">1</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">1</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkCheckButton" id="download_done_script_check">
-                    <property name="label" translatable="yes">Call scrip_t when done downloading:</property>
-                    <property name="focusable">1</property>
-                    <property name="valign">center</property>
-                    <property name="use-underline">1</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">2</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
+              <object class="AdwSwitchRow" id="append_suffix_to_incomplete_check">
+                <property name="title" translatable="yes">Append "._part" to incomplete files' names</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwSwitchRow" id="incomplete_dir_check">
+                <property name="title" translatable="yes">Keep incomplete torrents in</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow">
+                <property name="title" translatable="yes">Incomplete folder</property>
+                <child type="suffix">
                   <object class="gtkmm__CustomObject_10PathButton" id="incomplete_dir_chooser">
                     <property name="sensitive" bind-source="incomplete_dir_check" bind-property="active" bind-flags="sync-create">0</property>
                     <property name="hexpand">1</property>
                     <property name="action">select-folder</property>
-                    <layout>
-                      <property name="column">1</property>
-                      <property name="row">1</property>
-                    </layout>
                   </object>
                 </child>
-                <child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwSwitchRow" id="download_done_script_check">
+                <property name="title" translatable="yes">Call script when done downloading</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow">
+                <property name="title" translatable="yes">Script</property>
+                <child type="suffix">
                   <object class="gtkmm__CustomObject_10PathButton" id="download_done_script_chooser">
                     <property name="sensitive" bind-source="download_done_script_check" bind-property="active" bind-flags="sync-create">0</property>
                     <property name="hexpand">1</property>
-                    <layout>
-                      <property name="column">1</property>
-                      <property name="row">2</property>
-                    </layout>
                   </object>
                 </child>
               </object>
@@ -1121,9 +990,6 @@ To add a new primary URL, add it after a blank line.</property>
   <object class="GtkSizeGroup" id="downloading_page_labels_width_group">
     <widgets>
       <widget name="watch_dir_check" />
-      <widget name="download_dir_label" />
-      <widget name="max_active_downloads_label" />
-      <widget name="max_inactive_time_label" />
       <widget name="incomplete_dir_check" />
       <widget name="download_done_script_check" />
     </widgets>
