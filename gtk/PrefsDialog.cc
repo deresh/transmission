@@ -502,11 +502,16 @@ SeedingPage::SeedingPage(
     Glib::RefPtr<Session> const& core)
     : PageBase(cast_item, builder, core)
 {
-    init_check_button("stop_seeding_ratio_check", TR_KEY_seed_ratio_limited);
-    init_spin_button<double>("stop_seeding_ratio_spin", TR_KEY_seed_ratio_limit, 0, 1000, 0.05);
-    init_check_button("stop_seeding_timeout_check", TR_KEY_idle_seeding_limit_enabled);
-    init_spin_button<uint16_t>("stop_seeding_timeout_spin", TR_KEY_idle_seeding_limit, 1, 40320, 5);
-    init_check_button("seeding_done_script_check", TR_KEY_script_torrent_done_seeding_enabled);
+    /* each limit value is only used while its switch is on */
+    auto* const ratio_switch = init_switch_row("stop_seeding_ratio_check", TR_KEY_seed_ratio_limited);
+    auto* const ratio_spin = init_spin_row<double>("stop_seeding_ratio_spin", TR_KEY_seed_ratio_limit, 0, 1000, 0.05);
+    g_object_bind_property(ratio_switch, "active", ratio_spin, "sensitive", G_BINDING_SYNC_CREATE);
+
+    auto* const timeout_switch = init_switch_row("stop_seeding_timeout_check", TR_KEY_idle_seeding_limit_enabled);
+    auto* const timeout_spin = init_spin_row<uint16_t>("stop_seeding_timeout_spin", TR_KEY_idle_seeding_limit, 1, 40320, 5);
+    g_object_bind_property(timeout_switch, "active", timeout_spin, "sensitive", G_BINDING_SYNC_CREATE);
+
+    init_switch_row("seeding_done_script_check", TR_KEY_script_torrent_done_seeding_enabled);
     init_chooser_button("seeding_done_script_chooser", TR_KEY_script_torrent_done_seeding_filename);
 }
 

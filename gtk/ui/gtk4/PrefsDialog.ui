@@ -198,75 +198,37 @@
           <object class="AdwPreferencesGroup">
             <property name="title" translatable="yes">Limits</property>
             <child>
-              <object class="GtkGrid" id="limits_section_layout">
-                <property name="row-spacing">6</property>
-                <property name="column-spacing">12</property>
-                <child>
-                  <object class="GtkCheckButton" id="stop_seeding_ratio_check">
-                    <property name="label" translatable="yes">Stop seeding at _ratio:</property>
-                    <property name="focusable">1</property>
-                    <property name="valign">center</property>
-                    <property name="use-underline">1</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">0</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkCheckButton" id="stop_seeding_timeout_check">
-                    <property name="label" translatable="yes">Stop seeding if idle for _N minutes:</property>
-                    <property name="focusable">1</property>
-                    <property name="valign">center</property>
-                    <property name="use-underline">1</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">1</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkCheckButton" id="seeding_done_script_check">
-                    <property name="label" translatable="yes">Call scrip_t when done seeding:</property>
-                    <property name="focusable">1</property>
-                    <property name="valign">center</property>
-                    <property name="use-underline">1</property>
-                    <layout>
-                      <property name="column">0</property>
-                      <property name="row">2</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkSpinButton" id="stop_seeding_ratio_spin">
-                    <property name="sensitive" bind-source="stop_seeding_ratio_check" bind-property="active" bind-flags="sync-create">0</property>
-                    <property name="focusable">1</property>
-                    <property name="hexpand">1</property>
-                    <layout>
-                      <property name="column">1</property>
-                      <property name="row">0</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkSpinButton" id="stop_seeding_timeout_spin">
-                    <property name="sensitive" bind-source="stop_seeding_timeout_check" bind-property="active" bind-flags="sync-create">0</property>
-                    <property name="focusable">1</property>
-                    <property name="hexpand">1</property>
-                    <layout>
-                      <property name="column">1</property>
-                      <property name="row">1</property>
-                    </layout>
-                  </object>
-                </child>
-                <child>
+              <object class="AdwSwitchRow" id="stop_seeding_ratio_check">
+                <property name="title" translatable="yes">Stop seeding at ratio</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwSpinRow" id="stop_seeding_ratio_spin">
+                <property name="title" translatable="yes">Ratio</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwSwitchRow" id="stop_seeding_timeout_check">
+                <property name="title" translatable="yes">Stop seeding if idle for N minutes</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwSpinRow" id="stop_seeding_timeout_spin">
+                <property name="title" translatable="yes">Idle time (minutes)</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwSwitchRow" id="seeding_done_script_check">
+                <property name="title" translatable="yes">Call script when done seeding</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow">
+                <property name="title" translatable="yes">Script</property>
+                <child type="suffix">
                   <object class="gtkmm__CustomObject_10PathButton" id="seeding_done_script_chooser">
                     <property name="sensitive" bind-source="seeding_done_script_check" bind-property="active" bind-flags="sync-create">0</property>
                     <property name="hexpand">1</property>
-                    <layout>
-                      <property name="column">1</property>
-                      <property name="row">2</property>
-                    </layout>
                   </object>
                 </child>
               </object>
