@@ -32,6 +32,7 @@
 #include <glibmm/miscutils.h>
 #include <glibmm/ustring.h>
 #include <glibmm/variant.h>
+#include <gtkmm/button.h>
 #include <gtkmm/image.h>
 #include <gtkmm/label.h>
 #include <gtkmm/listitemfactory.h>
@@ -634,6 +635,15 @@ MainWindow::Impl::Impl(
     primary_menu->set_icon_name("open-menu-symbolic");
     primary_menu->set_menu_model(gtr_action_get_object<Gio::Menu>("main-window-menu"));
     adw_compat_header_pack_end(gtr_get_widget<Gtk::Widget>(builder, "header_bar")->gobj(), GTK_WIDGET(primary_menu->gobj()));
+
+    /* one click to the preferences; the menu entry stays for discoverability */
+    auto* const preferences_button = Gtk::make_managed<Gtk::Button>();
+    preferences_button->set_icon_name("preferences-system-symbolic");
+    preferences_button->set_tooltip_text(_("Preferences"));
+    preferences_button->set_action_name("win.edit-preferences");
+    adw_compat_header_pack_end(
+        gtr_get_widget<Gtk::Widget>(builder, "header_bar")->gobj(),
+        GTK_WIDGET(preferences_button->gobj()));
     window.set_title(Glib::get_application_name());
     window.set_default_size(gtr_pref_int_get<int>(TR_KEY_main_window_width), gtr_pref_int_get<int>(TR_KEY_main_window_height));
 
