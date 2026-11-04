@@ -968,7 +968,7 @@ private:
 
     Gtk::Label* portLabel_ = nullptr;
     Gtk::Button* portButton_ = nullptr;
-    Gtk::SpinButton* portSpin_ = nullptr;
+    GtkWidget* portSpin_ = nullptr;
 
     sigc::connection portTag_;
     sigc::connection prefsTag_;
@@ -1034,7 +1034,7 @@ void NetworkPage::portTestSetSensitive()
     auto const sensitive = !core_->port_test_pending(Session::PORT_TEST_IPV4) &&
         !core_->port_test_pending(Session::PORT_TEST_IPV6);
     portButton_->set_sensitive(sensitive);
-    portSpin_->set_sensitive(sensitive);
+    gtk_widget_set_sensitive(portSpin_, sensitive);
 }
 
 void NetworkPage::onPortTested(std::optional<bool> const result, Session::PortTestIpProtocol const ip_protocol)
@@ -1089,32 +1089,32 @@ NetworkPage::NetworkPage(
     , core_(core)
     , portLabel_(get_widget<Gtk::Label>("listening_port_status_label"))
     , portButton_(get_widget<Gtk::Button>("test_listening_port_button"))
-    , portSpin_(init_spin_button<uint16_t>("listening_port_spin", TR_KEY_peer_port, 1, std::numeric_limits<uint16_t>::max(), 1))
+    , portSpin_(init_spin_row<uint16_t>("listening_port_spin", TR_KEY_peer_port, 1, std::numeric_limits<uint16_t>::max(), 1))
 {
     portButton_->signal_clicked().connect([this]() { onPortTest(); });
     updatePortStatusText();
 
     prefsTag_ = core_->signal_prefs_changed().connect([this](auto key) { onCorePrefsChanged(key); });
 
-    init_check_button("pick_random_listening_port_at_start_check", TR_KEY_peer_port_random_on_start);
-    init_check_button("enable_listening_port_forwarding_check", TR_KEY_port_forwarding_enabled);
-    init_spin_button<uint16_t>(
+    init_switch_row("pick_random_listening_port_at_start_check", TR_KEY_peer_port_random_on_start);
+    init_switch_row("enable_listening_port_forwarding_check", TR_KEY_port_forwarding_enabled);
+    init_spin_row<uint16_t>(
         "max_torrent_peers_spin",
         TR_KEY_peer_limit_per_torrent,
         1,
         std::numeric_limits<uint16_t>::max(),
         5);
-    init_spin_button<uint16_t>("max_total_peers_spin", TR_KEY_peer_limit_global, 1, std::numeric_limits<uint16_t>::max(), 5);
+    init_spin_row<uint16_t>("max_total_peers_spin", TR_KEY_peer_limit_global, 1, std::numeric_limits<uint16_t>::max(), 5);
 
 #ifdef WITH_UTP
-    init_check_button("enable_utp_check", TR_KEY_utp_enabled);
+    init_switch_row("enable_utp_check", TR_KEY_utp_enabled);
 #else
-    get_widget<Gtk::CheckButton>("enable_utp_check")->hide();
+    get_widget<Gtk::Widget>("enable_utp_check")->set_visible(false);
 #endif
 
-    init_check_button("enable_pex_check", TR_KEY_pex_enabled);
-    init_check_button("enable_dht_check", TR_KEY_dht_enabled);
-    init_check_button("enable_lpd_check", TR_KEY_lpd_enabled);
+    init_switch_row("enable_pex_check", TR_KEY_pex_enabled);
+    init_switch_row("enable_dht_check", TR_KEY_dht_enabled);
+    init_switch_row("enable_lpd_check", TR_KEY_lpd_enabled);
     init_text_view("default_trackers_view", TR_KEY_default_trackers);
 }
 
