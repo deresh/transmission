@@ -549,14 +549,14 @@ DesktopPage::DesktopPage(
     Glib::RefPtr<Session> const& core)
     : PageBase(cast_item, builder, core)
 {
-    init_check_button("inhibit_hibernation_check", TR_KEY_inhibit_desktop_hibernation);
+    init_switch_row("inhibit_hibernation_check", TR_KEY_inhibit_desktop_hibernation);
 
     /* no tray implementation yet: keep the option out of the dialog */
-    get_widget<Gtk::CheckButton>("show_systray_icon_check")->hide();
+    get_widget<Gtk::Widget>("show_systray_icon_check")->set_visible(false);
 
-    init_check_button("notify_on_torrent_add_check", TR_KEY_torrent_added_notification_enabled);
-    init_check_button("notify_on_torrent_finish_check", TR_KEY_torrent_complete_notification_enabled);
-    init_check_button("ding_no_torrent_finish_check", TR_KEY_torrent_complete_sound_enabled);
+    init_switch_row("notify_on_torrent_add_check", TR_KEY_torrent_added_notification_enabled);
+    init_switch_row("notify_on_torrent_finish_check", TR_KEY_torrent_complete_notification_enabled);
+    init_switch_row("ding_no_torrent_finish_check", TR_KEY_torrent_complete_sound_enabled);
 }
 
 /****
