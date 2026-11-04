@@ -31,6 +31,7 @@
 #include <gtkmm/entry.h>
 #include <gtkmm/eventcontrollerfocus.h>
 #include <gtkmm/label.h>
+#include <gtkmm/listbox.h>
 #include <gtkmm/liststore.h>
 #include <gtkmm/spinbutton.h>
 #include <gtkmm/textview.h>
@@ -690,9 +691,9 @@ public:
 
 private:
     void refreshWhitelist();
-    void onAddressEdited(Glib::ustring const& path, Glib::ustring const& address);
+    void rebuildWhitelistRows();
+    void removeWhitelistRow(size_t index);
     void onAddWhitelistClicked();
-    void onRemoveWhitelistClicked();
     void refreshRPCSensitivity();
 
     static void onLaunchClutchCB();
@@ -702,11 +703,11 @@ private:
 private:
     Glib::RefPtr<Session> core_;
 
-    Gtk::TreeView* view_;
-    Gtk::Button* remove_button_;
-    Gtk::CheckButton* rpc_tb_;
-    Gtk::CheckButton* auth_tb_;
-    Gtk::CheckButton* whitelist_tb_;
+    Gtk::ListBox* list_;
+    GtkWidget* rpc_tb_;
+    GtkWidget* auth_tb_;
+    GtkWidget* whitelist_tb_;
+    GtkWidget* whitelist_entry_ = nullptr;
 
     Glib::RefPtr<Gtk::ListStore> store_;
     std::vector<Gtk::Widget*> auth_widgets_;
@@ -756,45 +757,79 @@ void RemotePage::refreshWhitelist()
     core_->set_pref(TR_KEY_rpc_whitelist, str);
 }
 
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-void RemotePage::onAddressEdited(Glib::ustring const& path, Glib::ustring const& address)
+void RemotePage::rebuildWhitelistRows()
 {
-    if (auto const iter = store_->get_iter(path); iter)
+    auto* const list = GTK_WIDGET(list_->gobj());
+    while (auto* const child = gtk_widget_get_first_child(list))
     {
-        (*iter)[whitelist_cols.address] = address;
+        gtk_list_box_remove(GTK_LIST_BOX(list), child);
     }
 
+    auto const can_remove = store_->children().size() > 1;
+    auto index = size_t{ 0 };
+    for (auto const& row : store_->children())
+    {
+        auto const address = Glib::ustring{ row.get_value(whitelist_cols.address) };
+        auto* const adw_row = adw_action_row_new();
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(adw_row), address.c_str());
+
+        auto* const remove_button = Gtk::make_managed<Gtk::Button>();
+        remove_button->set_icon_name("user-trash-symbolic");
+        remove_button->set_tooltip_text(_("Remove"));
+        remove_button->add_css_class("flat");
+        remove_button->set_valign(Gtk::Align::CENTER);
+        remove_button->set_sensitive(can_remove);
+        remove_button->signal_clicked().connect([this, index]() { removeWhitelistRow(index); });
+        adw_action_row_add_suffix(ADW_ACTION_ROW(adw_row), GTK_WIDGET(remove_button->gobj()));
+
+        gtk_list_box_append(GTK_LIST_BOX(list), adw_row);
+        ++index;
+    }
+}
+
+void RemotePage::removeWhitelistRow(size_t const index)
+{
+    /* at least one rule stays */
+    if (store_->children().size() <= 1)
+    {
+        return;
+    }
+
+    auto* const path = gtk_tree_path_new_from_indices(static_cast<gint>(index), -1);
+    GtkTreeIter iter;
+    if (gtk_tree_model_get_iter(GTK_TREE_MODEL(store_->gobj()), &iter, path))
+    {
+        gtk_list_store_remove(store_->gobj(), &iter);
+    }
+    gtk_tree_path_free(path);
+
     refreshWhitelist();
+    /* the clicked button dies with its row, so rebuild after the signal */
+    Glib::signal_idle().connect_once([this]() { rebuildWhitelistRows(); });
 }
 
 void RemotePage::onAddWhitelistClicked()
 {
-    auto const iter = store_->append();
-    (*iter)[whitelist_cols.address] = "0.0.0.0";
-
-    view_->set_cursor(store_->get_path(iter), *view_->get_column(0), true);
-}
-
-void RemotePage::onRemoveWhitelistClicked()
-{
-    auto const sel = view_->get_selection();
-
-    if (auto const iter = sel->get_selected(); iter)
+    /* addresses come from the entry row; in-place cell editing in a tree
+       view trips a GTK CSS node assertion */
+    auto const address = Glib::ustring{ gtk_editable_get_text(GTK_EDITABLE(whitelist_entry_)) };
+    if (address.empty())
     {
-        store_->erase(iter);
-        refreshWhitelist();
+        return;
     }
+
+    auto const iter = store_->append();
+    (*iter)[whitelist_cols.address] = address;
+    gtk_editable_set_text(GTK_EDITABLE(whitelist_entry_), "");
+    refreshWhitelist();
+    rebuildWhitelistRows();
 }
 
 void RemotePage::refreshRPCSensitivity()
 {
-    bool const rpc_active = rpc_tb_->get_active();
-    bool const auth_active = auth_tb_->get_active();
-    bool const whitelist_active = whitelist_tb_->get_active();
-    auto const sel = view_->get_selection();
-    auto const have_addr = sel->get_selected();
-    auto const n_rules = store_->children().size();
-
+    bool const rpc_active = adw_switch_row_get_active(ADW_SWITCH_ROW(rpc_tb_));
+    bool const auth_active = adw_switch_row_get_active(ADW_SWITCH_ROW(auth_tb_));
+    bool const whitelist_active = adw_switch_row_get_active(ADW_SWITCH_ROW(whitelist_tb_));
     for (auto* const widget : auth_widgets_)
     {
         widget->set_sensitive(rpc_active && auth_active);
@@ -804,8 +839,6 @@ void RemotePage::refreshRPCSensitivity()
     {
         widget->set_sensitive(rpc_active && whitelist_active);
     }
-
-    remove_button_->set_sensitive(rpc_active && whitelist_active && have_addr && n_rules > 1);
 }
 
 void RemotePage::onLaunchClutchCB()
@@ -816,54 +849,38 @@ void RemotePage::onLaunchClutchCB()
 RemotePage::RemotePage(BaseObjectType* cast_item, Glib::RefPtr<Gtk::Builder> const& builder, Glib::RefPtr<Session> const& core)
     : PageBase(cast_item, builder, core)
     , core_(core)
-    , view_(get_widget<Gtk::TreeView>("rpc_whitelist_view"))
-    , remove_button_(get_widget<Gtk::Button>("remove_from_rpc_whistlist_button"))
-    , rpc_tb_(init_check_button("enable_rpc_check", TR_KEY_rpc_enabled))
-    , auth_tb_(init_check_button("enable_rpc_auth_check", TR_KEY_rpc_authentication_required))
-    , whitelist_tb_(init_check_button("rpc_whitelist_check", TR_KEY_rpc_whitelist_enabled))
+    , list_(get_widget<Gtk::ListBox>("rpc_whitelist_list"))
+    , rpc_tb_(init_switch_row("enable_rpc_check", TR_KEY_rpc_enabled))
+    , auth_tb_(init_switch_row("enable_rpc_auth_check", TR_KEY_rpc_authentication_required))
+    , whitelist_tb_(init_switch_row("rpc_whitelist_check", TR_KEY_rpc_whitelist_enabled))
 {
-    rpc_tb_->signal_toggled().connect([this]() { refreshRPCSensitivity(); });
+    adw_compat_connect_notify(rpc_tb_, "notify::active", [this]() { refreshRPCSensitivity(); });
     auto* const open_button = get_widget<Gtk::Button>("open_web_client_button");
     open_button->signal_clicked().connect(&RemotePage::onLaunchClutchCB);
 
-    init_spin_button<uint16_t>("rpc_port_spin", TR_KEY_rpc_port, 0, std::numeric_limits<uint16_t>::max(), 1);
+    init_spin_row<uint16_t>("rpc_port_spin", TR_KEY_rpc_port, 0, std::numeric_limits<uint16_t>::max(), 1);
 
-    auth_tb_->signal_toggled().connect([this]() { refreshRPCSensitivity(); });
+    adw_compat_connect_notify(auth_tb_, "notify::active", [this]() { refreshRPCSensitivity(); });
 
     auto* const username_entry = init_entry("rpc_username_entry", TR_KEY_rpc_username);
     auth_widgets_.push_back(username_entry);
-    auth_widgets_.push_back(get_widget<Gtk::Label>("rpc_username_label"));
+    auth_widgets_.push_back(get_widget<Gtk::Widget>("rpc_username_row"));
 
     auto* const password_entry = init_entry("rpc_password_entry", TR_KEY_rpc_password);
     auth_widgets_.push_back(password_entry);
-    auth_widgets_.push_back(get_widget<Gtk::Label>("rpc_password_label"));
+    auth_widgets_.push_back(get_widget<Gtk::Widget>("rpc_password_row"));
 
-    whitelist_tb_->signal_toggled().connect([this]() { refreshRPCSensitivity(); });
+    adw_compat_connect_notify(whitelist_tb_, "notify::active", [this]() { refreshRPCSensitivity(); });
 
     {
         store_ = whitelist_tree_model_new(gtr_pref_string_get(TR_KEY_rpc_whitelist));
 
-        view_->set_model(store_);
-        setup_item_view_button_event_handling(
-            *view_,
-            {},
-            [this](double view_x, double view_y) { return on_item_view_button_released(*view_, view_x, view_y); });
+        whitelist_widgets_.push_back(list_);
+        rebuildWhitelistRows();
 
-        whitelist_widgets_.push_back(view_);
-        auto const sel = view_->get_selection();
-        sel->signal_changed().connect([this]() { refreshRPCSensitivity(); });
+        whitelist_entry_ = get_widget<Gtk::Widget>("rpc_whitelist_entry")->gobj();
+        whitelist_widgets_.push_back(get_widget<Gtk::Widget>("rpc_whitelist_entry"));
 
-        auto* r = Gtk::make_managed<Gtk::CellRendererText>();
-        r->signal_edited().connect(sigc::mem_fun(*this, &RemotePage::onAddressEdited));
-        r->property_editable() = true;
-        auto* c = Gtk::make_managed<Gtk::TreeViewColumn>("", *r);
-        c->add_attribute(r->property_text(), whitelist_cols.address);
-        c->set_expand(true);
-        view_->append_column(*c);
-
-        whitelist_widgets_.push_back(get_widget<Gtk::Label>("rpc_whitelist_label"));
-
-        remove_button_->signal_clicked().connect([this]() { onRemoveWhitelistClicked(); });
         refreshRPCSensitivity();
         auto* add_button = get_widget<Gtk::Button>("add_to_rpc_whitelist_button");
         whitelist_widgets_.push_back(add_button);
