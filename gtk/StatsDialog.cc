@@ -5,6 +5,7 @@
 
 #include "StatsDialog.h"
 
+#include "AdwCompat.h"
 #include "GtkCompat.h"
 #include "PrefsDialog.h"
 #include "Session.h"
@@ -14,11 +15,11 @@
 #include <glibmm/main.h>
 #include <glibmm/ustring.h>
 #include <gtkmm/label.h>
-#include <gtkmm/messagedialog.h>
 
 #include <fmt/format.h>
 
 #include <memory>
+#include <string_view>
 
 static auto constexpr TR_RESPONSE_RESET = 1;
 
@@ -102,29 +103,25 @@ void StatsDialog::Impl::dialogResponse(int response)
 {
     if (response == TR_RESPONSE_RESET)
     {
-        auto w = std::make_shared<Gtk::MessageDialog>(
-            dialog_,
+        auto* const dialog = adw_compat_alert_dialog_new(
             _("Reset your statistics?"),
-            false,
-            Gtk::MessageType::QUESTION,
-            Gtk::ButtonsType::NONE,
-            true);
-        w->add_button(_("_Cancel"), Gtk::ResponseType::CANCEL);
-        w->add_button(_("_Reset"), TR_RESPONSE_RESET);
-        w->set_secondary_text(
             _("These statistics are for your information only. "
               "Resetting them doesn't affect the statistics logged by your BitTorrent trackers."));
-        w->signal_response().connect(
-            [this, w](int inner_response) mutable
+        adw_compat_alert_add_response(dialog, "cancel", _("Cancel"));
+        adw_compat_alert_add_response(dialog, "reset", _("Reset"), ADW_RESPONSE_DESTRUCTIVE);
+        adw_alert_dialog_set_default_response(ADW_ALERT_DIALOG(dialog), "cancel");
+        adw_alert_dialog_set_close_response(ADW_ALERT_DIALOG(dialog), "cancel");
+        adw_compat_alert_on_response(
+            dialog,
+            [this](char const* response)
             {
-                if (inner_response == TR_RESPONSE_RESET)
+                if (std::string_view{ response } == "reset")
                 {
                     tr_sessionClearStats(core_->get_session());
                     updateStats();
                 }
-                w.reset();
             });
-        w->show();
+        adw_compat_dialog_present(dialog, GTK_WIDGET(dialog_.gobj()));
     }
 
     if (response == Gtk::ResponseType::CLOSE)

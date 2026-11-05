@@ -248,19 +248,14 @@ void MessageLogWindow::Impl::doSave(std::string const& filename)
     }
     catch (std::ios_base::failure const& e)
     {
-        auto w = std::make_shared<Gtk::MessageDialog>(
+        gtr_show_error(
             window_,
             fmt::format(
                 fmt::runtime(_("Couldn't save '{path}': {error} ({error_code})")),
                 fmt::arg("path", Glib::filename_to_utf8(filename)),
                 fmt::arg("error", e.code().message()),
                 fmt::arg("error_code", e.code().value())),
-            false,
-            Gtk::MessageType::ERROR,
-            Gtk::ButtonsType::CLOSE);
-        w->set_secondary_text(e.code().message());
-        w->signal_response().connect([w](int /*response*/) mutable { w.reset(); });
-        w->show();
+            e.code().message());
     }
 }
 

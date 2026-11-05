@@ -848,7 +848,7 @@ void FileList::Impl::on_rename_done_idle(Glib::ustring const& path_string, Glib:
     }
     else
     {
-        auto w = std::make_shared<Gtk::MessageDialog>(
+        gtr_show_error(
             gtr_widget_get_window(widget_),
             fmt::format(
                 fmt::runtime(_("Couldn't rename '{old_path}' as '{path}': {error} ({error_code})")),
@@ -856,13 +856,7 @@ void FileList::Impl::on_rename_done_idle(Glib::ustring const& path_string, Glib:
                 fmt::arg("path", newname),
                 fmt::arg("error", tr_strerror(error)),
                 fmt::arg("error_code", error)),
-            false,
-            Gtk::MessageType::ERROR,
-            Gtk::ButtonsType::CLOSE,
-            true);
-        w->set_secondary_text(_("Please correct the errors and try again."));
-        w->signal_response().connect([w](int /*response*/) mutable { w.reset(); });
-        w->show();
+            _("Please correct the errors and try again."));
     }
 }
 

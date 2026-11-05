@@ -4,17 +4,18 @@
 
 #include "Dialogs.h"
 
+#include "AdwCompat.h"
 #include "GtkCompat.h"
 #include "Session.h"
 #include "Utils.h"
 
 #include <glibmm/i18n.h>
 #include <glibmm/ustring.h>
-#include <gtkmm/messagedialog.h>
 
 #include <fmt/format.h>
 
 #include <memory>
+#include <string_view>
 #include <vector>
 
 /***
@@ -102,36 +103,22 @@ void gtr_confirm_remove(
         }
     }
 
-    auto d = std::make_shared<Gtk::MessageDialog>(
-        parent,
-        fmt::format("<big><b>{}</b></big>", primary_text),
-        true /*use_markup*/,
-        Gtk::MessageType::WARNING,
-        Gtk::ButtonsType::NONE,
-        true /*modal*/);
-
-    if (!secondary_text.empty())
-    {
-        d->set_secondary_text(secondary_text, true);
-    }
-
-    d->add_button(_("_Cancel"), Gtk::ResponseType::CANCEL);
-    d->add_button(delete_files ? _("_Delete") : _("_Remove"), Gtk::ResponseType::ACCEPT);
-    d->set_default_response(Gtk::ResponseType::CANCEL);
-
-    d->signal_response().connect(
-        [d, core, torrent_ids, delete_files](int response) mutable
+    auto* const dialog = adw_compat_alert_dialog_new(primary_text.c_str(), secondary_text.c_str());
+    adw_compat_alert_add_response(dialog, "cancel", _("Cancel"));
+    adw_compat_alert_add_response(dialog, "accept", delete_files ? _("Delete") : _("Remove"), ADW_RESPONSE_DESTRUCTIVE);
+    adw_alert_dialog_set_default_response(ADW_ALERT_DIALOG(dialog), "cancel");
+    adw_alert_dialog_set_close_response(ADW_ALERT_DIALOG(dialog), "cancel");
+    adw_compat_alert_on_response(
+        dialog,
+        [core, torrent_ids, delete_files](char const* response)
         {
-            if (response == Gtk::ResponseType::ACCEPT)
+            if (std::string_view{ response } == "accept")
             {
                 for (auto const id : torrent_ids)
                 {
                     core->remove_torrent(id, delete_files);
                 }
             }
-
-            d.reset();
         });
-
-    d->show();
+    adw_compat_dialog_present(dialog, GTK_WIDGET(parent.gobj()));
 }

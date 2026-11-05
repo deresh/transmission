@@ -44,6 +44,13 @@
 
 void gtr_message(std::string const& message);
 void gtr_warning(std::string const& message);
+// Shows a modal error with a Close button. on_closed runs after the dialog closes.
+void gtr_show_error(
+    Gtk::Window& parent,
+    Glib::ustring const& heading,
+    Glib::ustring const& body,
+    std::function<void()> on_closed = {});
+
 void gtr_error(std::string const& message);
 
 /***

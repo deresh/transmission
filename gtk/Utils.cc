@@ -5,6 +5,7 @@
 
 #include "Utils.h"
 
+#include "AdwCompat.h"
 #include "Prefs.h"
 #include "PrefsDialog.h"
 #include "Session.h"
@@ -34,7 +35,6 @@
 #include <gtkmm/gesture.h>
 #include <gtkmm/gestureclick.h>
 #include <gtkmm/liststore.h>
-#include <gtkmm/messagedialog.h>
 #include <gtkmm/treemodel.h>
 #include <gtkmm/treemodelcolumn.h>
 
@@ -280,15 +280,24 @@ void gtr_add_torrent_error_dialog(Gtk::Widget& child, tr_torrent* duplicate_torr
         secondary = fmt::format(fmt::runtime(_("Couldn't add torrent file '{path}'")), fmt::arg("path", filename));
     }
 
-    auto w = std::make_shared<Gtk::MessageDialog>(
-        gtr_widget_get_window(child),
-        _("Couldn't open torrent"),
-        false,
-        Gtk::MessageType::ERROR,
-        Gtk::ButtonsType::CLOSE);
-    w->set_secondary_text(secondary);
-    w->signal_response().connect([w](int /*response*/) mutable { w.reset(); });
-    w->show();
+    gtr_show_error(gtr_widget_get_window(child), _("Couldn't open torrent"), secondary);
+}
+
+void gtr_show_error(
+    Gtk::Window& parent,
+    Glib::ustring const& heading,
+    Glib::ustring const& body,
+    std::function<void()> on_closed)
+{
+    auto* const dialog = adw_compat_alert_dialog_new(heading.c_str(), body.c_str());
+    adw_compat_alert_add_response(dialog, "close", _("Close"));
+    adw_alert_dialog_set_default_response(ADW_ALERT_DIALOG(dialog), "close");
+    adw_alert_dialog_set_close_response(ADW_ALERT_DIALOG(dialog), "close");
+    if (on_closed)
+    {
+        adw_compat_dialog_on_closed(dialog, std::move(on_closed));
+    }
+    adw_compat_dialog_present(dialog, GTK_WIDGET(parent.gobj()));
 }
 
 /* pop up the context menu if a user right-clicks.
@@ -823,16 +832,9 @@ void gtr_window_raise([[maybe_unused]] Gtk::Window& window)
 
 void gtr_unrecognized_url_dialog(Gtk::Widget& parent, Glib::ustring const& url)
 {
+    auto const heading = fmt::format(fmt::runtime(_("Unsupported URL: '{url}'")), fmt::arg("url", url));
+
     Glib::ustring gstr;
-
-    auto w = std::make_shared<Gtk::MessageDialog>(
-        gtr_widget_get_window(parent),
-        fmt::format(fmt::runtime(_("Unsupported URL: '{url}'")), fmt::arg("url", url)),
-        false /*use markup*/,
-        Gtk::MessageType::ERROR,
-        Gtk::ButtonsType::CLOSE,
-        true /*modal*/);
-
     gstr += fmt::format(fmt::runtime(_("Transmission doesn't know how to use '{url}'")), fmt::arg("url", url));
 
     if (tr_magnet_metainfo{}.parseMagnet(url.raw()))
@@ -841,9 +843,7 @@ void gtr_unrecognized_url_dialog(Gtk::Widget& parent, Glib::ustring const& url)
         gstr += _("This magnet link appears to be intended for something other than BitTorrent.");
     }
 
-    w->set_secondary_text(gstr);
-    w->signal_response().connect([w](int /*response*/) mutable { w.reset(); });
-    w->show();
+    gtr_show_error(gtr_widget_get_window(parent), heading, gstr);
 }
 
 /***

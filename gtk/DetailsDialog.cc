@@ -2162,16 +2162,7 @@ void EditTrackersDialog::on_response(int response)
             }
             else
             {
-                auto w = std::make_shared<Gtk::MessageDialog>(
-                    *this,
-                    _("List contains invalid URLs"),
-                    false,
-                    Gtk::MessageType::ERROR,
-                    Gtk::ButtonsType::CLOSE,
-                    true);
-                w->set_secondary_text(_("Please correct the errors and try again."));
-                w->signal_response().connect([w](int /*response*/) mutable { w.reset(); });
-                w->show();
+                gtr_show_error(*this, _("List contains invalid URLs"), _("Please correct the errors and try again."));
 
                 do_destroy = false;
             }

@@ -5,6 +5,7 @@
 
 #include "RelocateDialog.h"
 
+#include "AdwCompat.h"
 #include "GtkCompat.h"
 #include "PathButton.h"
 #include "Prefs.h" /* gtr_pref_string_get */
@@ -57,7 +58,7 @@ private:
     int done_ = 0;
     bool do_move_ = false;
     sigc::connection timer_;
-    std::unique_ptr<Gtk::MessageDialog> message_dialog_;
+    GtkWidget* progress_dialog_ = nullptr;
     PathButton* chooser_ = nullptr;
     Gtk::CheckButton* move_tb_ = nullptr;
 };
@@ -82,9 +83,13 @@ void RelocateDialog::Impl::startMovingNextTorrent()
 
     torrent_ids_.pop_back();
 
-    message_dialog_->set_message(
-        fmt::format(fmt::runtime(_("Moving '{torrent_name}'")), fmt::arg("torrent_name", tr_torrentName(tor))),
-        true);
+    if (progress_dialog_ != nullptr)
+    {
+        auto const heading = fmt::format(
+            fmt::runtime(_("Moving '{torrent_name}'")),
+            fmt::arg("torrent_name", tr_torrentName(tor)));
+        adw_alert_dialog_set_heading(ADW_ALERT_DIALOG(progress_dialog_), heading.c_str());
+    }
 }
 
 /* every once in awhile, check to see if the move is done.
@@ -93,23 +98,13 @@ bool RelocateDialog::Impl::onTimer()
 {
     if (done_ == TR_LOC_ERROR)
     {
-        auto d = std::make_shared<Gtk::MessageDialog>(
-            *message_dialog_,
-            _("Couldn't move torrent"),
-            false,
-            Gtk::MessageType::ERROR,
-            Gtk::ButtonsType::CLOSE,
-            true);
+        if (progress_dialog_ != nullptr)
+        {
+            adw_dialog_force_close(ADW_DIALOG(progress_dialog_));
+            progress_dialog_ = nullptr;
+        }
 
-        d->signal_response().connect(
-            [this, d](int /*response*/) mutable
-            {
-                d.reset();
-                message_dialog_.reset();
-                dialog_.close();
-            });
-
-        d->show();
+        gtr_show_error(dialog_, _("Couldn't move torrent"), {}, [this]() { dialog_.close(); });
         return false;
     }
 
@@ -121,7 +116,11 @@ bool RelocateDialog::Impl::onTimer()
         }
         else
         {
-            message_dialog_.reset();
+            if (progress_dialog_ != nullptr)
+            {
+                adw_dialog_force_close(ADW_DIALOG(progress_dialog_));
+                progress_dialog_ = nullptr;
+            }
             dialog_.close();
             return false;
         }
@@ -139,16 +138,10 @@ void RelocateDialog::Impl::onResponse(int response)
         do_move_ = move_tb_->get_active();
 
         /* pop up a dialog saying that the work is in progress */
-        message_dialog_ = std::make_unique<Gtk::MessageDialog>(
-            dialog_,
-            Glib::ustring(),
-            false,
-            Gtk::MessageType::INFO,
-            Gtk::ButtonsType::CLOSE,
-            true);
-        message_dialog_->set_secondary_text(_("This may take a moment…"));
-        message_dialog_->set_response_sensitive(Gtk::ResponseType::CLOSE, false);
-        message_dialog_->show();
+        progress_dialog_ = adw_compat_alert_dialog_new(nullptr, _("This may take a moment…"));
+        adw_compat_alert_add_response(progress_dialog_, "close", _("Close"));
+        adw_alert_dialog_set_response_enabled(ADW_ALERT_DIALOG(progress_dialog_), "close", FALSE);
+        adw_compat_dialog_present(progress_dialog_, GTK_WIDGET(dialog_.gobj()));
 
         /* remember this location for the next torrent */
         targetLocation = location;

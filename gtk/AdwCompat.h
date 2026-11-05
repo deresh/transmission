@@ -77,6 +77,40 @@ inline void adw_compat_dialog_present(GtkWidget* dialog, GtkWidget* parent)
     adw_dialog_present(ADW_DIALOG(dialog), parent);
 }
 
+// Creates an AdwAlertDialog. A null or empty body is left out.
+inline GtkWidget* adw_compat_alert_dialog_new(char const* heading, char const* body)
+{
+    auto const* const text = (body != nullptr && body[0] != '\0') ? body : nullptr;
+    return GTK_WIDGET(adw_alert_dialog_new(heading, text));
+}
+
+// Adds a response button to an AdwAlertDialog.
+inline void adw_compat_alert_add_response(
+    GtkWidget* dialog,
+    char const* id,
+    char const* label,
+    AdwResponseAppearance appearance = ADW_RESPONSE_DEFAULT)
+{
+    adw_alert_dialog_add_response(ADW_ALERT_DIALOG(dialog), id, label);
+    adw_alert_dialog_set_response_appearance(ADW_ALERT_DIALOG(dialog), id, appearance);
+}
+
+// Runs callback(response id) when the user picks a response. The callback is owned by the signal connection.
+template<typename F>
+void adw_compat_alert_on_response(GtkWidget* dialog, F&& callback)
+{
+    using Callback = std::decay_t<F>;
+    auto* const data = new Callback(std::forward<F>(callback));
+    g_signal_connect_data(
+        dialog,
+        "response",
+        G_CALLBACK(+[](AdwAlertDialog*, char const* response, gpointer user_data)
+                   { (*static_cast<Callback*>(user_data))(response); }),
+        data,
+        [](gpointer user_data, GClosure*) { delete static_cast<Callback*>(user_data); },
+        GConnectFlags{});
+}
+
 // Runs callback once the dialog has closed. The callback is owned by the signal connection.
 template<typename F>
 void adw_compat_dialog_on_closed(GtkWidget* dialog, F&& callback)

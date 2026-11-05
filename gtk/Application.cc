@@ -927,16 +927,7 @@ void Application::Impl::show_torrent_errors(Glib::ustring const& primary, std::v
         s << leader << ' ' << f << '\n';
     }
 
-    auto w = std::make_shared<Gtk::MessageDialog>(
-        *wind_,
-        primary,
-        false,
-        Gtk::MessageType::ERROR,
-        Gtk::ButtonsType::CLOSE,
-        true);
-    w->set_secondary_text(s.str());
-    w->signal_response().connect([w](int /*response*/) mutable { w.reset(); });
-    w->show();
+    gtr_show_error(*wind_, primary, s.str());
 
     files.clear();
 }
