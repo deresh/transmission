@@ -706,7 +706,8 @@ Glib::RefPtr<Torrent> Session::Impl::create_new_torrent(tr_ctor* ctor)
             // #1294: don't delete the .torrent file if it's our internal copy
             std::string const config_dir = tr_sessionGetConfigDir(session_);
             bool const is_internal = source && source->starts_with(config_dir);
-            if (!is_internal)
+            /* magnet links have no source file, so there is nothing to trash */
+            if (!is_internal && !source->empty())
             {
                 gtr_file_trash_or_remove(*source);
             }

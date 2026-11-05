@@ -110,7 +110,8 @@ void OptionsDialog::Impl::addResponseCB(int response)
 
         core_->add_torrent(Torrent::create(tor_), false);
 
-        if (trash_check_->get_active())
+        /* magnet links have no file to trash */
+        if (trash_check_->get_active() && !filename_.empty())
         {
             gtr_file_trash_or_remove(filename_, nullptr);
         }
