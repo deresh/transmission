@@ -5,6 +5,7 @@
 
 #include "MakeDialog.h"
 
+#include "AdwCompat.h"
 #include "GtkCompat.h"
 #include "PathButton.h"
 #include "PrefsDialog.h"
@@ -53,7 +54,7 @@ using FileListHandler = Glib::SListHandler<Glib::RefPtr<Gio::File>>;
 namespace
 {
 
-class MakeProgressDialog : public Gtk::Dialog
+class MakeProgressDialog : public Gtk::Widget
 {
 public:
     MakeProgressDialog(
@@ -82,11 +83,14 @@ public:
 
 private:
     bool onProgressDialogRefresh();
-    void onProgressDialogResponse(int response);
+    void onCancel();
+    void onClose();
+    void onAdd();
 
     void addTorrent();
 
 private:
+    Glib::RefPtr<Gtk::Builder> const ui_builder_;
     tr_metainfo_builder& builder_;
     std::future<tr_error> future_;
     std::string const target_;
@@ -96,6 +100,9 @@ private:
     sigc::connection progress_tag_;
     Gtk::Label* progress_label_ = nullptr;
     Gtk::ProgressBar* progress_bar_ = nullptr;
+    Gtk::Button* cancel_button_ = nullptr;
+    Gtk::Button* close_button_ = nullptr;
+    Gtk::Button* add_button_ = nullptr;
 };
 
 } // namespace
@@ -108,12 +115,12 @@ public:
     Impl(Impl const&) = delete;
     Impl& operator=(Impl&&) = delete;
     Impl& operator=(Impl const&) = delete;
-    ~Impl() = default;
+    ~Impl();
 
 private:
     void onSourceToggled(Gtk::CheckButton* tb, PathButton* chooser);
     void onChooserChosen(PathButton* chooser);
-    void onResponse(int response);
+    void onNew();
 
     bool on_drag_data_received(Glib::ValueBase const& value, double x, double y);
 
@@ -128,6 +135,8 @@ private:
 
 private:
     MakeDialog& dialog_;
+    /* keeps the builder's widgets alive for as long as the dialog exists */
+    Glib::RefPtr<Gtk::Builder> const ui_builder_;
     Glib::RefPtr<Session> const core_;
 
     Gtk::CheckButton* file_radio_ = nullptr;
@@ -218,9 +227,9 @@ bool MakeProgressDialog::onProgressDialogRefresh()
     progress_bar_->set_text(str);
 
     /* buttons */
-    set_response_sensitive(Gtk::ResponseType::CANCEL, !is_done);
-    set_response_sensitive(Gtk::ResponseType::CLOSE, is_done);
-    set_response_sensitive(Gtk::ResponseType::ACCEPT, is_done && success);
+    cancel_button_->set_sensitive(!is_done);
+    close_button_->set_sensitive(is_done);
+    add_button_->set_sensitive(is_done && success);
 
     success_ = success;
     return true;
@@ -229,6 +238,12 @@ bool MakeProgressDialog::onProgressDialogRefresh()
 MakeProgressDialog::~MakeProgressDialog()
 {
     progress_tag_.disconnect();
+
+    /* closed before the checksums finished: stop them */
+    if (!success_)
+    {
+        builder_.cancel_checksums();
+    }
 }
 
 void MakeProgressDialog::addTorrent()
@@ -239,27 +254,21 @@ void MakeProgressDialog::addTorrent()
     core_->add_ctor(ctor);
 }
 
-void MakeProgressDialog::onProgressDialogResponse(int response)
+void MakeProgressDialog::onCancel()
 {
-    switch (response)
-    {
-    case Gtk::ResponseType::CANCEL:
-    case Gtk::ResponseType::DELETE_EVENT:
-        builder_.cancel_checksums();
-        close();
-        break;
+    builder_.cancel_checksums();
+    adw_dialog_close(ADW_DIALOG(gobj()));
+}
 
-    case Gtk::ResponseType::ACCEPT:
-        addTorrent();
-        [[fallthrough]];
+void MakeProgressDialog::onClose()
+{
+    adw_dialog_close(ADW_DIALOG(gobj()));
+}
 
-    case Gtk::ResponseType::CLOSE:
-        close();
-        break;
-
-    default:
-        g_assert(0 && "unhandled response");
-    }
+void MakeProgressDialog::onAdd()
+{
+    addTorrent();
+    adw_dialog_close(ADW_DIALOG(gobj()));
 }
 
 MakeProgressDialog::MakeProgressDialog(
@@ -269,7 +278,8 @@ MakeProgressDialog::MakeProgressDialog(
     std::future<tr_error> future,
     std::string_view target,
     Glib::RefPtr<Session> const& core)
-    : Gtk::Dialog(cast_item)
+    : Gtk::Widget(cast_item)
+    , ui_builder_(builder)
     , builder_(metainfo_builder)
     , future_{ std::move(future) }
     , target_(target)
@@ -277,7 +287,12 @@ MakeProgressDialog::MakeProgressDialog(
     , progress_label_(gtr_get_widget<Gtk::Label>(builder, "progress_label"))
     , progress_bar_(gtr_get_widget<Gtk::ProgressBar>(builder, "progress_bar"))
 {
-    signal_response().connect(sigc::mem_fun(*this, &MakeProgressDialog::onProgressDialogResponse));
+    cancel_button_ = gtr_get_widget<Gtk::Button>(builder, "cancel_button");
+    close_button_ = gtr_get_widget<Gtk::Button>(builder, "close_button");
+    add_button_ = gtr_get_widget<Gtk::Button>(builder, "add_button");
+    cancel_button_->signal_clicked().connect([this]() { onCancel(); });
+    close_button_->signal_clicked().connect([this]() { onClose(); });
+    add_button_->signal_clicked().connect([this]() { onAdd(); });
 
     progress_tag_ = Glib::signal_timeout().connect_seconds(
         sigc::mem_fun(*this, &MakeProgressDialog::onProgressDialogRefresh),
@@ -301,15 +316,15 @@ std::unique_ptr<MakeProgressDialog> MakeProgressDialog::create(
         core));
 }
 
-void MakeDialog::Impl::onResponse(int response)
+MakeDialog::Impl::~Impl()
 {
-    if (response == Gtk::ResponseType::CLOSE || response == Gtk::ResponseType::DELETE_EVENT)
-    {
-        dialog_.close();
-        return;
-    }
+    /* the progress dialog stops the checksums through builder_, so it must go first */
+    progress_dialog_.reset();
+}
 
-    if (response != Gtk::ResponseType::ACCEPT || !builder_.has_value())
+void MakeDialog::Impl::onNew()
+{
+    if (!builder_.has_value())
     {
         return;
     }
@@ -340,19 +355,18 @@ void MakeDialog::Impl::onResponse(int response)
 
     // build the .torrent
     progress_dialog_ = MakeProgressDialog::create(target, *builder_, builder_->make_checksums(), core_);
-    progress_dialog_->set_transient_for(dialog_);
-    gtr_window_on_close(
-        *progress_dialog_,
+    adw_compat_dialog_on_closed(
+        GTK_WIDGET(progress_dialog_->gobj()),
         [this]()
         {
             auto const success = progress_dialog_->success();
             progress_dialog_.reset();
             if (success)
             {
-                dialog_.close();
+                adw_dialog_close(ADW_DIALOG(dialog_.gobj()));
             }
         });
-    progress_dialog_->show();
+    adw_compat_dialog_present(GTK_WIDGET(progress_dialog_->gobj()), GTK_WIDGET(dialog_.gobj()));
 }
 
 /***
@@ -461,27 +475,23 @@ bool MakeDialog::Impl::on_drag_data_received(Glib::ValueBase const& value, doubl
     return false;
 }
 
-MakeDialog::MakeDialog(
-    BaseObjectType* cast_item,
-    Glib::RefPtr<Gtk::Builder> const& builder,
-    Gtk::Window& parent,
-    Glib::RefPtr<Session> const& core)
-    : Gtk::Dialog(cast_item)
+MakeDialog::MakeDialog(BaseObjectType* cast_item, Glib::RefPtr<Gtk::Builder> const& builder, Glib::RefPtr<Session> const& core)
+    : Gtk::Widget(cast_item)
     , impl_(std::make_unique<Impl>(*this, builder, core))
 {
-    set_transient_for(parent);
 }
 
 MakeDialog::~MakeDialog() = default;
 
-std::unique_ptr<MakeDialog> MakeDialog::create(Gtk::Window& parent, Glib::RefPtr<Session> const& core)
+std::unique_ptr<MakeDialog> MakeDialog::create(Glib::RefPtr<Session> const& core)
 {
     auto const builder = Gtk::Builder::create_from_resource(gtr_get_full_resource_path("MakeDialog.ui"));
-    return std::unique_ptr<MakeDialog>(gtr_get_widget_derived<MakeDialog>(builder, "MakeDialog", parent, core));
+    return std::unique_ptr<MakeDialog>(gtr_get_widget_derived<MakeDialog>(builder, "MakeDialog", core));
 }
 
 MakeDialog::Impl::Impl(MakeDialog& dialog, Glib::RefPtr<Gtk::Builder> const& builder, Glib::RefPtr<Session> const& core)
     : dialog_(dialog)
+    , ui_builder_(builder)
     , core_(core)
     , file_radio_(gtr_get_widget<Gtk::CheckButton>(builder, "source_file_radio"))
     , file_chooser_(gtr_get_widget_derived<PathButton>(builder, "source_file_button"))
@@ -497,7 +507,10 @@ MakeDialog::Impl::Impl(MakeDialog& dialog, Glib::RefPtr<Gtk::Builder> const& bui
     , source_entry_(gtr_get_widget<Gtk::Entry>(builder, "source_entry"))
     , announce_text_buffer_(gtr_get_widget<Gtk::TextView>(builder, "trackers_view")->get_buffer())
 {
-    dialog_.signal_response().connect(sigc::mem_fun(*this, &Impl::onResponse));
+    gtr_get_widget<Gtk::Button>(builder, "close_button")
+        ->signal_clicked()
+        .connect([this]() { adw_dialog_close(ADW_DIALOG(dialog_.gobj())); });
+    gtr_get_widget<Gtk::Button>(builder, "new_button")->signal_clicked().connect([this]() { onNew(); });
 
     destination_chooser_->set_filename(Glib::get_user_special_dir(Glib::UserDirectory::DESKTOP));
 
@@ -514,7 +527,7 @@ MakeDialog::Impl::Impl(MakeDialog& dialog, Glib::RefPtr<Gtk::Builder> const& bui
 
     auto drop_controller = Gtk::DropTarget::create(GDK_TYPE_FILE_LIST, Gdk::DragAction::COPY);
     drop_controller->signal_drop().connect(sigc::mem_fun(*this, &Impl::on_drag_data_received), false);
-    dialog_.add_controller(drop_controller);
+    gtr_get_widget<Gtk::Widget>(builder, "dialog_page")->add_controller(drop_controller);
 }
 
 void MakeDialog::Impl::onPieceSizeUpdated()

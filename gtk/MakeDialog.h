@@ -7,28 +7,23 @@
 
 #include <glibmm/refptr.h>
 #include <gtkmm/builder.h>
-#include <gtkmm/dialog.h>
-#include <gtkmm/window.h>
+#include <gtkmm/widget.h>
 
 #include <memory>
 
 class Session;
 
-class MakeDialog : public Gtk::Dialog
+class MakeDialog : public Gtk::Widget
 {
 public:
-    MakeDialog(
-        BaseObjectType* cast_item,
-        Glib::RefPtr<Gtk::Builder> const& builder,
-        Gtk::Window& parent,
-        Glib::RefPtr<Session> const& core);
+    MakeDialog(BaseObjectType* cast_item, Glib::RefPtr<Gtk::Builder> const& builder, Glib::RefPtr<Session> const& core);
     MakeDialog(MakeDialog&&) = delete;
     MakeDialog(MakeDialog const&) = delete;
     MakeDialog& operator=(MakeDialog&&) = delete;
     MakeDialog& operator=(MakeDialog const&) = delete;
     ~MakeDialog() override;
 
-    static std::unique_ptr<MakeDialog> create(Gtk::Window& parent, Glib::RefPtr<Session> const& core);
+    static std::unique_ptr<MakeDialog> create(Glib::RefPtr<Session> const& core);
 
 private:
     class Impl;

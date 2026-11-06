@@ -1423,9 +1423,9 @@ void Application::Impl::actions_handler(Glib::ustring const& action_name)
     }
     else if (action_name == "new-torrent")
     {
-        auto w = std::shared_ptr<MakeDialog>(MakeDialog::create(*wind_, core_));
-        gtr_window_on_close(*w, [w]() mutable { w.reset(); });
-        w->show();
+        auto w = std::shared_ptr<MakeDialog>(MakeDialog::create(core_));
+        adw_compat_dialog_on_closed(GTK_WIDGET(w->gobj()), [w]() mutable { w.reset(); });
+        adw_compat_dialog_present(GTK_WIDGET(w->gobj()), GTK_WIDGET(wind_->gobj()));
     }
     else if (action_name == "remove-torrent")
     {
