@@ -256,14 +256,17 @@ void Application::Impl::show_details_dialog_for_selected_torrents()
 
     if (dialog_it == details_.end())
     {
-        auto dialog = DetailsDialog::create(*wind_, core_);
+        auto dialog = DetailsDialog::create(core_);
         dialog->set_torrents(ids);
-        gtr_window_on_close(*dialog, [this, key]() { details_.erase(key); });
+        // The map owns the dialog. Erase it from an idle callback: the dialog is destroyed by the erase,
+        // and the closed signal that calls this is still being emitted on it.
+        adw_compat_dialog_on_closed(
+            GTK_WIDGET(dialog->gobj()),
+            [this, key]() { Glib::signal_idle().connect_once([this, key]() { details_.erase(key); }); });
         dialog_it = details_.try_emplace(key, std::move(dialog)).first;
-        dialog_it->second->show();
     }
 
-    gtr_window_present(dialog_it->second);
+    adw_compat_dialog_present(GTK_WIDGET(dialog_it->second->gobj()), GTK_WIDGET(wind_->gobj()));
 }
 
 /****

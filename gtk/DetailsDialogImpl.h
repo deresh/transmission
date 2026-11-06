@@ -51,8 +51,6 @@ private:
     void tracker_page_init(Glib::RefPtr<Gtk::Builder> const& builder);
     void options_page_init(Glib::RefPtr<Gtk::Builder> const& builder);
 
-    void on_details_window_size_allocated();
-
     bool onPeerViewQueryTooltip(int x, int y, bool keyboard_tip, Glib::RefPtr<Gtk::Tooltip> const& tooltip);
     void onMorePeerInfoToggled();
 
@@ -91,6 +89,8 @@ private:
 private:
     DetailsDialog& dialog_;
     Glib::RefPtr<Session> const core_;
+    // The widgets of the .ui belong to this builder; without it they are finalized after the constructor.
+    Glib::RefPtr<Gtk::Builder> const builder_;
 
     Gtk::CheckButton* honor_limits_check_ = nullptr;
     Gtk::CheckButton* up_limited_check_ = nullptr;
@@ -157,6 +157,7 @@ private:
 
     std::vector<tr_torrent_id_t> ids_;
     sigc::connection periodic_refresh_tag_;
+    sigc::connection close_button_tag_;
 
     Glib::Quark const TORRENT_ID_KEY = Glib::Quark("tr-torrent-id-key");
     Glib::Quark const TEXT_BUFFER_KEY = Glib::Quark("tr-text-buffer-key");

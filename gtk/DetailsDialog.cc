@@ -103,39 +103,29 @@ void DetailsDialog::Impl::refresh()
 
     if (torrents.empty())
     {
-        dialog_.response(Gtk::ResponseType::CLOSE);
+        adw_dialog_close(ADW_DIALOG(dialog_.gobj()));
     }
-}
-
-void DetailsDialog::Impl::on_details_window_size_allocated()
-{
-    int w = 0;
-    int h = 0;
-    dialog_.get_default_size(w, h);
-    gtr_pref_int_set(TR_KEY_details_window_width, w);
-    gtr_pref_int_set(TR_KEY_details_window_height, h);
 }
 
 DetailsDialog::Impl::~Impl()
 {
     periodic_refresh_tag_.disconnect();
+    close_button_tag_.disconnect();
 }
 
-std::unique_ptr<DetailsDialog> DetailsDialog::create(Gtk::Window& parent, Glib::RefPtr<Session> const& core)
+std::unique_ptr<DetailsDialog> DetailsDialog::create(Glib::RefPtr<Session> const& core)
 {
     auto const builder = Gtk::Builder::create_from_resource(gtr_get_full_resource_path("DetailsDialog.ui"));
-    return std::unique_ptr<DetailsDialog>(gtr_get_widget_derived<DetailsDialog>(builder, "DetailsDialog", parent, core));
+    return std::unique_ptr<DetailsDialog>(gtr_get_widget_derived<DetailsDialog>(builder, "DetailsDialog", core));
 }
 
 DetailsDialog::DetailsDialog(
     BaseObjectType* cast_item,
     Glib::RefPtr<Gtk::Builder> const& builder,
-    Gtk::Window& parent,
     Glib::RefPtr<Session> const& core)
-    : Gtk::Dialog(cast_item)
+    : Gtk::Widget(cast_item)
     , impl_(std::make_unique<Impl>(*this, builder, core))
 {
-    set_transient_for(parent);
 }
 
 DetailsDialog::~DetailsDialog() = default;
@@ -143,6 +133,7 @@ DetailsDialog::~DetailsDialog() = default;
 DetailsDialog::Impl::Impl(DetailsDialog& dialog, Glib::RefPtr<Gtk::Builder> const& builder, Glib::RefPtr<Session> const& core)
     : dialog_(dialog)
     , core_(core)
+    , builder_(builder)
     , honor_limits_check_(gtr_get_widget<Gtk::CheckButton>(builder, "honor_limits_check"))
     , up_limited_check_(gtr_get_widget<Gtk::CheckButton>(builder, "upload_limit_check"))
     , up_limit_sping_(gtr_get_widget<Gtk::SpinButton>(builder, "upload_limit_spin"))
@@ -183,11 +174,12 @@ DetailsDialog::Impl::Impl(DetailsDialog& dialog, Glib::RefPtr<Gtk::Builder> cons
     /* return saved window size */
     auto const width = gtr_pref_int_get<int>(TR_KEY_details_window_width);
     auto const height = gtr_pref_int_get<int>(TR_KEY_details_window_height);
-    dialog_.set_default_size(width, height);
-    dialog_.property_default_width().signal_changed().connect(sigc::mem_fun(*this, &Impl::on_details_window_size_allocated));
-    dialog_.property_default_height().signal_changed().connect(sigc::mem_fun(*this, &Impl::on_details_window_size_allocated));
+    adw_dialog_set_content_width(ADW_DIALOG(dialog_.gobj()), width);
+    adw_dialog_set_content_height(ADW_DIALOG(dialog_.gobj()), height);
 
-    dialog_.signal_response().connect(sigc::hide<0>(sigc::mem_fun(dialog_, &DetailsDialog::close)));
+    close_button_tag_ = gtr_get_widget<Gtk::Button>(builder, "close_button")
+                            ->signal_clicked()
+                            .connect([this]() { adw_dialog_close(ADW_DIALOG(dialog_.gobj())); });
 
     info_page_init(builder);
     peer_page_init(builder);
@@ -233,7 +225,7 @@ void DetailsDialog::Impl::set_torrents(std::vector<tr_torrent_id_t> const& ids)
             fmt::arg("torrent_count", len));
     }
 
-    dialog_.set_title(title);
+    adw_dialog_set_title(ADW_DIALOG(dialog_.gobj()), title.c_str());
 
     refresh();
 }

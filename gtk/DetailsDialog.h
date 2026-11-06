@@ -9,29 +9,24 @@
 
 #include <glibmm/refptr.h>
 #include <gtkmm/builder.h>
-#include <gtkmm/dialog.h>
-#include <gtkmm/window.h>
+#include <gtkmm/widget.h>
 
 #include <memory>
 #include <vector>
 
 class Session;
 
-class DetailsDialog : public Gtk::Dialog
+class DetailsDialog : public Gtk::Widget
 {
 public:
-    DetailsDialog(
-        BaseObjectType* cast_item,
-        Glib::RefPtr<Gtk::Builder> const& builder,
-        Gtk::Window& parent,
-        Glib::RefPtr<Session> const& core);
+    DetailsDialog(BaseObjectType* cast_item, Glib::RefPtr<Gtk::Builder> const& builder, Glib::RefPtr<Session> const& core);
     DetailsDialog(DetailsDialog&&) = delete;
     DetailsDialog(DetailsDialog const&) = delete;
     DetailsDialog& operator=(DetailsDialog&&) = delete;
     DetailsDialog& operator=(DetailsDialog const&) = delete;
     ~DetailsDialog() override;
 
-    static std::unique_ptr<DetailsDialog> create(Gtk::Window& parent, Glib::RefPtr<Session> const& core);
+    static std::unique_ptr<DetailsDialog> create(Glib::RefPtr<Session> const& core);
 
     void set_torrents(std::vector<tr_torrent_id_t> const& torrent_ids);
     void refresh();
