@@ -6,6 +6,7 @@
 #include "DetailsDialog.h"
 
 #include "Actions.h"
+#include "AdwCompat.h"
 #include "FileList.h"
 #include "GtkCompat.h"
 #include "HigWorkarea.h" // GUI_PAD, GUI_PAD_BIG, GUI_PAD_SMALL
@@ -2087,7 +2088,7 @@ void DetailsDialog::Impl::onBackupToggled()
 namespace
 {
 
-class EditTrackersDialog : public Gtk::Dialog
+class EditTrackersDialog : public Gtk::Widget
 {
 public:
     EditTrackersDialog(
@@ -2108,9 +2109,10 @@ public:
         tr_torrent const* tor);
 
 private:
-    void on_response(int response) override;
+    void onAccept();
 
 private:
+    Glib::RefPtr<Gtk::Builder> const ui_builder_;
     DetailsDialog& parent_;
     Glib::RefPtr<Session> const core_;
     tr_torrent_id_t const torrent_id_;
@@ -2123,17 +2125,23 @@ EditTrackersDialog::EditTrackersDialog(
     DetailsDialog& parent,
     Glib::RefPtr<Session> const& core,
     tr_torrent const* torrent)
-    : Gtk::Dialog(cast_item)
+    : Gtk::Widget(cast_item)
+    , ui_builder_(builder)
     , parent_(parent)
     , core_(core)
     , torrent_id_(tr_torrentId(torrent))
     , urls_view_(gtr_get_widget<Gtk::TextView>(builder, "urls_view"))
 {
-    set_title(
-        fmt::format(fmt::runtime(_("{torrent_name} - Edit Trackers")), fmt::arg("torrent_name", tr_torrentName(torrent))));
-    set_transient_for(parent);
-
+    auto const title = fmt::format(
+        fmt::runtime(_("{torrent_name} - Edit Trackers")),
+        fmt::arg("torrent_name", tr_torrentName(torrent)));
+    adw_dialog_set_title(ADW_DIALOG(gobj()), title.c_str());
     urls_view_->get_buffer()->set_text(tr_torrentGetTrackerList(torrent));
+
+    gtr_get_widget<Gtk::Button>(builder, "save_button")->signal_clicked().connect([this]() { onAccept(); });
+    gtr_get_widget<Gtk::Button>(builder, "cancel_button")
+        ->signal_clicked()
+        .connect([this]() { adw_dialog_close(ADW_DIALOG(gobj())); });
 }
 
 std::unique_ptr<EditTrackersDialog> EditTrackersDialog::create(
@@ -2146,32 +2154,26 @@ std::unique_ptr<EditTrackersDialog> EditTrackersDialog::create(
         gtr_get_widget_derived<EditTrackersDialog>(builder, "EditTrackersDialog", parent, core, torrent));
 }
 
-void EditTrackersDialog::on_response(int response)
+void EditTrackersDialog::onAccept()
 {
     bool do_destroy = true;
-
-    if (response == Gtk::ResponseType::ACCEPT)
+    auto const text_buffer = urls_view_->get_buffer();
+    if (auto* const tor = core_->find_torrent(torrent_id_); tor != nullptr)
     {
-        auto const text_buffer = urls_view_->get_buffer();
-
-        if (auto* const tor = core_->find_torrent(torrent_id_); tor != nullptr)
+        if (tr_torrentSetTrackerList(tor, text_buffer->get_text(false).raw()))
         {
-            if (tr_torrentSetTrackerList(tor, text_buffer->get_text(false).raw()))
-            {
-                parent_.refresh();
-            }
-            else
-            {
-                gtr_show_error(*this, _("List contains invalid URLs"), _("Please correct the errors and try again."));
-
-                do_destroy = false;
-            }
+            parent_.refresh();
+        }
+        else
+        {
+            gtr_show_error(*this, _("List contains invalid URLs"), _("Please correct the errors and try again."));
+            do_destroy = false;
         }
     }
 
     if (do_destroy)
     {
-        close();
+        adw_dialog_close(ADW_DIALOG(gobj()));
     }
 }
 
@@ -2182,8 +2184,8 @@ void DetailsDialog::Impl::on_edit_trackers()
     if (auto const* const tor = tracker_list_get_current_torrent(); tor != nullptr)
     {
         auto d = std::shared_ptr<EditTrackersDialog>(EditTrackersDialog::create(dialog_, core_, tor));
-        gtr_window_on_close(*d, [d]() mutable { d.reset(); });
-        d->show();
+        adw_compat_dialog_on_closed(GTK_WIDGET(d->gobj()), [d]() mutable { d.reset(); });
+        adw_compat_dialog_present(GTK_WIDGET(d->gobj()), GTK_WIDGET(dialog_.gobj()));
     }
 }
 
@@ -2200,7 +2202,7 @@ void DetailsDialog::Impl::on_tracker_list_selection_changed()
 namespace
 {
 
-class AddTrackerDialog : public Gtk::Dialog
+class AddTrackerDialog : public Gtk::Widget
 {
 public:
     AddTrackerDialog(
@@ -2221,9 +2223,10 @@ public:
         tr_torrent const* tor);
 
 private:
-    void on_response(int response) override;
+    void onAccept();
 
 private:
+    Glib::RefPtr<Gtk::Builder> const ui_builder_;
     DetailsDialog& parent_;
     Glib::RefPtr<Session> const core_;
     tr_torrent_id_t const torrent_id_;
@@ -2236,19 +2239,24 @@ AddTrackerDialog::AddTrackerDialog(
     DetailsDialog& parent,
     Glib::RefPtr<Session> const& core,
     tr_torrent const* torrent)
-    : Gtk::Dialog(cast_item)
+    : Gtk::Widget(cast_item)
+    , ui_builder_(builder)
     , parent_(parent)
     , core_(core)
     , torrent_id_(tr_torrentId(torrent))
     , url_entry_(gtr_get_widget<Gtk::Entry>(builder, "url_entry"))
 {
-    set_title(fmt::format(fmt::runtime(_("{torrent_name} - Add Tracker")), fmt::arg("torrent_name", tr_torrentName(torrent))));
-    set_transient_for(parent);
-
-    auto* const accept = get_widget_for_response(Gtk::ResponseType::ACCEPT);
-    set_default_widget(*accept);
-
+    auto const title = fmt::format(
+        fmt::runtime(_("{torrent_name} - Add Tracker")),
+        fmt::arg("torrent_name", tr_torrentName(torrent)));
+    adw_dialog_set_title(ADW_DIALOG(gobj()), title.c_str());
+    adw_dialog_set_default_widget(ADW_DIALOG(gobj()), gtr_get_widget<Gtk::Widget>(builder, "open_button")->gobj());
     gtr_paste_clipboard_url_into_entry(*url_entry_);
+
+    gtr_get_widget<Gtk::Button>(builder, "open_button")->signal_clicked().connect([this]() { onAccept(); });
+    gtr_get_widget<Gtk::Button>(builder, "cancel_button")
+        ->signal_clicked()
+        .connect([this]() { adw_dialog_close(ADW_DIALOG(gobj())); });
 }
 
 std::unique_ptr<AddTrackerDialog> AddTrackerDialog::create(
@@ -2261,36 +2269,31 @@ std::unique_ptr<AddTrackerDialog> AddTrackerDialog::create(
         gtr_get_widget_derived<AddTrackerDialog>(builder, "AddTrackerDialog", parent, core, torrent));
 }
 
-void AddTrackerDialog::on_response(int response)
+void AddTrackerDialog::onAccept()
 {
     bool destroy = true;
-
-    if (response == Gtk::ResponseType::ACCEPT)
+    auto const url = gtr_str_strip(url_entry_->get_text());
+    if (!url.empty())
     {
-        auto const url = gtr_str_strip(url_entry_->get_text());
-
-        if (!url.empty())
+        if (tr_urlIsValidTracker(url.c_str()))
         {
-            if (tr_urlIsValidTracker(url.c_str()))
-            {
-                // TODO(ckerr) migrate to `TR_KEY_tracker_list`
-                auto params = tr_variant::Map{ 2U };
-                params.try_emplace(TR_KEY_ids, Session::to_variant({ torrent_id_ }));
-                params.try_emplace(TR_KEY_tracker_add, Session::to_variant({ url.raw() }));
-                core_->exec(TR_KEY_torrent_set, std::move(params));
-                parent_.refresh();
-            }
-            else
-            {
-                gtr_unrecognized_url_dialog(*this, url);
-                destroy = false;
-            }
+            // TODO(ckerr) migrate to `TR_KEY_tracker_list`
+            auto params = tr_variant::Map{ 2U };
+            params.try_emplace(TR_KEY_ids, Session::to_variant({ torrent_id_ }));
+            params.try_emplace(TR_KEY_tracker_add, Session::to_variant({ url.raw() }));
+            core_->exec(TR_KEY_torrent_set, std::move(params));
+            parent_.refresh();
+        }
+        else
+        {
+            gtr_unrecognized_url_dialog(*this, url);
+            destroy = false;
         }
     }
 
     if (destroy)
     {
-        close();
+        adw_dialog_close(ADW_DIALOG(gobj()));
     }
 }
 
@@ -2301,8 +2304,8 @@ void DetailsDialog::Impl::on_tracker_list_add_button_clicked()
     if (auto const* const tor = tracker_list_get_current_torrent(); tor != nullptr)
     {
         auto d = std::shared_ptr<AddTrackerDialog>(AddTrackerDialog::create(dialog_, core_, tor));
-        gtr_window_on_close(*d, [d]() mutable { d.reset(); });
-        d->show();
+        adw_compat_dialog_on_closed(GTK_WIDGET(d->gobj()), [d]() mutable { d.reset(); });
+        adw_compat_dialog_present(GTK_WIDGET(d->gobj()), GTK_WIDGET(dialog_.gobj()));
     }
 }
 
