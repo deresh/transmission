@@ -1248,27 +1248,32 @@ void Application::Impl::show_about_dialog()
         "Mike Gelfand",
     });
 
-    auto d = std::make_shared<Gtk::AboutDialog>();
-    d->set_authors(authors);
-    d->set_comments(_("A fast and easy BitTorrent client"));
-    d->set_copyright(_("Copyright © The Transmission Project"));
-    d->set_logo_icon_name(std::string(AppIconName));
-    d->set_name(Glib::get_application_name());
+    /* AdwAboutDialog wants a NULL-terminated array; it copies the strings */
+    auto developers = std::vector<char const*>();
+    developers.reserve(authors.size() + 1);
+    for (auto const& author : authors)
+    {
+        developers.push_back(author.c_str());
+    }
+    developers.push_back(nullptr);
+
+    auto* const d = adw_about_dialog_new();
+    adw_about_dialog_set_application_name(ADW_ABOUT_DIALOG(d), Glib::get_application_name().c_str());
+    adw_about_dialog_set_application_icon(ADW_ABOUT_DIALOG(d), std::string(AppIconName).c_str());
+    adw_about_dialog_set_comments(ADW_ABOUT_DIALOG(d), _("A fast and easy BitTorrent client"));
+    adw_about_dialog_set_copyright(ADW_ABOUT_DIALOG(d), _("Copyright © The Transmission Project"));
+    adw_about_dialog_set_developers(ADW_ABOUT_DIALOG(d), developers.data());
     /* Translators: translate "translator-credits" as your name
        to have it appear in the credits in the "About"
        dialog */
-    d->set_translator_credits(_("translator-credits"));
-    d->set_version(LONG_VERSION_STRING);
-    d->set_website(uri);
-    d->set_website_label(uri);
+    adw_about_dialog_set_translator_credits(ADW_ABOUT_DIALOG(d), _("translator-credits"));
+    adw_about_dialog_set_version(ADW_ABOUT_DIALOG(d), LONG_VERSION_STRING);
+    adw_about_dialog_set_website(ADW_ABOUT_DIALOG(d), uri.c_str());
 #ifdef SHOW_LICENSE
-    d->set_license(LICENSE);
-    d->set_wrap_license(true);
+    adw_about_dialog_set_license_type(ADW_ABOUT_DIALOG(d), GTK_LICENSE_CUSTOM);
+    adw_about_dialog_set_license(ADW_ABOUT_DIALOG(d), LICENSE);
 #endif
-    d->set_transient_for(*wind_);
-    d->set_modal(true);
-    gtr_window_on_close(*d, [d]() mutable { d.reset(); });
-    d->show();
+    adw_compat_dialog_present(GTK_WIDGET(d), GTK_WIDGET(wind_->gobj()));
 }
 
 bool Application::Impl::call_rpc_for_selected_torrents(tr_quark const method)
