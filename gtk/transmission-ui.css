@@ -1,7 +1,6 @@
 @define-color tr_transfer_down_color #5379a9;
 @define-color tr_transfer_up_color #26a955;
 @define-color tr_transfer_idle_color #636363;
-@define-color tr_error_color #ff453a;
 
 .tr-workarea.frame {
     border-left-width: 0;
@@ -28,13 +27,8 @@
     padding: 12px;
 }
 
-.tr-button-box,
 .tr-dialog-content {
     margin: 6px;
-}
-
-.tr-small {
-    font-size: small;
 }
 
 .tr-workarea row {
@@ -56,11 +50,6 @@ row .tr-list-item.tr-compact progressbar progress {
     min-height: 3px;
 }
 
-row .tr-list-item.tr-compact .tr-status {
-    margin-left: 3px;
-    margin-right: 3px;
-}
-
 row .tr-list-item.tr-transfer-down progressbar progress {
     background-image: none;
     background-color: @tr_transfer_down_color;
@@ -80,7 +69,7 @@ row .tr-list-item.tr-transfer-idle progressbar progress {
 }
 
 row:not(:selected) .tr-list-item.tr-error label {
-    color: @tr_error_color;
+    color: @error_color;
 }
 
 frame,
