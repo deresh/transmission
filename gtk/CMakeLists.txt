@@ -10,6 +10,11 @@ target_sources(${TR_NAME}-gtk
         Application.h
         DetailsDialog.cc
         DetailsDialog.h
+        DetailsFilesPage.cc
+        DetailsInfoPage.cc
+        DetailsOptionsPage.cc
+        DetailsPeersPage.cc
+        DetailsTrackersPage.cc
         Dialogs.cc
         Dialogs.h
         DynamicPropertyStore.h
