@@ -37,7 +37,6 @@
 #include <gtkmm/label.h>
 #include <gtkmm/liststore.h>
 #include <gtkmm/messagedialog.h>
-#include <gtkmm/notebook.h>
 #include <gtkmm/scrolledwindow.h>
 #include <gtkmm/spinbutton.h>
 #include <gtkmm/textbuffer.h>
@@ -80,7 +79,7 @@ using namespace std::literals;
 
 using namespace tr::Values;
 
-guint DetailsDialog::Impl::last_page_ = 0;
+std::string DetailsDialog::Impl::last_page_;
 
 std::vector<tr_torrent*> DetailsDialog::Impl::getTorrents() const
 {
@@ -190,9 +189,21 @@ DetailsDialog::Impl::Impl(DetailsDialog& dialog, Glib::RefPtr<Gtk::Builder> cons
         [this]() { return refresh(), true; },
         SECONDARY_WINDOW_REFRESH_INTERVAL_SECONDS);
 
-    auto* const n = gtr_get_widget<Gtk::Notebook>(builder, "dialog_pages");
-    n->set_current_page(static_cast<int>(last_page_));
-    n->signal_switch_page().connect([](Gtk::Widget* /*page*/, guint page_number) { last_page_ = page_number; });
+    auto* const stack = ADW_VIEW_STACK(gtr_get_widget<Gtk::Widget>(builder, "dialog_pages")->gobj());
+    if (!last_page_.empty())
+    {
+        adw_view_stack_set_visible_child_name(stack, last_page_.c_str());
+    }
+    adw_compat_connect_notify(
+        stack,
+        "notify::visible-child-name",
+        [stack]()
+        {
+            if (auto const* const name = adw_view_stack_get_visible_child_name(stack); name != nullptr)
+            {
+                last_page_ = name;
+            }
+        });
 }
 
 void DetailsDialog::set_torrents(std::vector<tr_torrent_id_t> const& ids)

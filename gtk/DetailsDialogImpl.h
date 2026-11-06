@@ -163,5 +163,5 @@ private:
     Glib::Quark const TEXT_BUFFER_KEY = Glib::Quark("tr-text-buffer-key");
     Glib::Quark const URL_ENTRY_KEY = Glib::Quark("tr-url-entry-key");
 
-    static guint last_page_;
+    static std::string last_page_;
 };
