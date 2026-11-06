@@ -1365,9 +1365,9 @@ void Application::Impl::actions_handler(Glib::ustring const& action_name)
 
     if (action_name == "open-torrent-from-url")
     {
-        auto w = std::shared_ptr<TorrentUrlChooserDialog>(TorrentUrlChooserDialog::create(*wind_, core_));
-        gtr_window_on_close(*w, [w]() mutable { w.reset(); });
-        w->show();
+        auto w = std::shared_ptr<TorrentUrlChooserDialog>(TorrentUrlChooserDialog::create(core_));
+        adw_compat_dialog_on_closed(GTK_WIDGET(w->gobj()), [w]() mutable { w.reset(); });
+        adw_compat_dialog_present(GTK_WIDGET(w->gobj()), GTK_WIDGET(wind_->gobj()));
     }
     else if (action_name == "open-torrent")
     {

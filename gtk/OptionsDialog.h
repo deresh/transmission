@@ -10,6 +10,7 @@
 #include <gtkmm/dialog.h>
 #include <gtkmm/entry.h>
 #include <gtkmm/filechoosernative.h>
+#include <gtkmm/widget.h>
 #include <gtkmm/window.h>
 
 #include <memory>
@@ -18,13 +19,12 @@ class Session;
 
 struct tr_ctor;
 
-class TorrentUrlChooserDialog : public Gtk::Dialog
+class TorrentUrlChooserDialog : public Gtk::Widget
 {
 public:
     TorrentUrlChooserDialog(
         BaseObjectType* cast_item,
         Glib::RefPtr<Gtk::Builder> const& builder,
-        Gtk::Window& parent,
         Glib::RefPtr<Session> const& core);
     TorrentUrlChooserDialog(TorrentUrlChooserDialog&&) = delete;
     TorrentUrlChooserDialog(TorrentUrlChooserDialog const&) = delete;
@@ -32,10 +32,13 @@ public:
     TorrentUrlChooserDialog& operator=(TorrentUrlChooserDialog const&) = delete;
     ~TorrentUrlChooserDialog() override = default;
 
-    static std::unique_ptr<TorrentUrlChooserDialog> create(Gtk::Window& parent, Glib::RefPtr<Session> const& core);
+    static std::unique_ptr<TorrentUrlChooserDialog> create(Glib::RefPtr<Session> const& core);
 
 private:
-    void onOpenURLResponse(int response, Gtk::Entry const& entry, Glib::RefPtr<Session> const& core);
+    void onOpen(Gtk::Entry const& entry, Glib::RefPtr<Session> const& core);
+
+    /* keeps the builder's widgets alive for as long as the dialog exists */
+    Glib::RefPtr<Gtk::Builder> const ui_builder_;
 };
 
 class TorrentFileChooserDialog : public Gtk::FileChooserNative

@@ -5,6 +5,7 @@
 
 #include "OptionsDialog.h"
 
+#include "AdwCompat.h"
 #include "FileList.h"
 #include "FreeSpaceLabel.h"
 #include "GtkCompat.h"
@@ -364,53 +365,44 @@ TorrentFileChooserDialog::TorrentFileChooserDialog(Gtk::Window& parent, Glib::Re
 ****
 ***/
 
-void TorrentUrlChooserDialog::onOpenURLResponse(int response, Gtk::Entry const& entry, Glib::RefPtr<Session> const& core)
+void TorrentUrlChooserDialog::onOpen(Gtk::Entry const& entry, Glib::RefPtr<Session> const& core)
 {
-    if (response == Gtk::ResponseType::CANCEL)
+    auto const url = gtr_str_strip(entry.get_text());
+
+    if (url.empty())
     {
-        close();
+        return;
     }
-    else if (response == Gtk::ResponseType::ACCEPT)
+
+    if (core->add_from_url(url))
     {
-        auto const url = gtr_str_strip(entry.get_text());
-
-        if (url.empty())
-        {
-            return;
-        }
-
-        if (core->add_from_url(url))
-        {
-            close();
-        }
-        else
-        {
-            gtr_unrecognized_url_dialog(*this, url);
-        }
+        adw_dialog_close(ADW_DIALOG(gobj()));
+    }
+    else
+    {
+        gtr_unrecognized_url_dialog(*this, url);
     }
 }
 
-std::unique_ptr<TorrentUrlChooserDialog> TorrentUrlChooserDialog::create(Gtk::Window& parent, Glib::RefPtr<Session> const& core)
+std::unique_ptr<TorrentUrlChooserDialog> TorrentUrlChooserDialog::create(Glib::RefPtr<Session> const& core)
 {
     auto const builder = Gtk::Builder::create_from_resource(gtr_get_full_resource_path("TorrentUrlChooserDialog.ui"));
     return std::unique_ptr<TorrentUrlChooserDialog>(
-        gtr_get_widget_derived<TorrentUrlChooserDialog>(builder, "TorrentUrlChooserDialog", parent, core));
+        gtr_get_widget_derived<TorrentUrlChooserDialog>(builder, "TorrentUrlChooserDialog", core));
 }
 
 TorrentUrlChooserDialog::TorrentUrlChooserDialog(
     BaseObjectType* cast_item,
     Glib::RefPtr<Gtk::Builder> const& builder,
-    Gtk::Window& parent,
     Glib::RefPtr<Session> const& core)
-    : Gtk::Dialog(cast_item)
+    : Gtk::Widget(cast_item)
+    , ui_builder_(builder)
 {
-    set_transient_for(parent);
-
     auto* const e = gtr_get_widget<Gtk::Entry>(builder, "url_entry");
-    auto* const accept = get_widget_for_response(Gtk::ResponseType::ACCEPT);
     gtr_paste_clipboard_url_into_entry(*e);
 
-    set_default_widget(*accept);
-
-    signal_response().connect([this, e, core](int response) { onOpenURLResponse(response, *e, core); });
+    gtr_get_widget<Gtk::Button>(builder, "open_button")->signal_clicked().connect([this, e, core]() { onOpen(*e, core); });
+    gtr_get_widget<Gtk::Button>(builder, "cancel_button")
+        ->signal_clicked()
+        .connect([this]() { adw_dialog_close(ADW_DIALOG(gobj())); });
 }
