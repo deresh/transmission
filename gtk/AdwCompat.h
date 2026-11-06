@@ -59,6 +59,22 @@ void adw_compat_connect_notify(gpointer instance, char const* detailed_signal, F
         GConnectFlags{});
 }
 
+// Connects a handler that takes no arguments to a signal without parameters (AdwBreakpoint::apply and unapply).
+// The returned id is for g_signal_handler_disconnect(); the handler is freed with the connection.
+template<typename F>
+gulong adw_compat_connect_void_signal(gpointer instance, char const* signal, F&& callback)
+{
+    using Callback = std::decay_t<F>;
+    auto* const data = new Callback(std::forward<F>(callback));
+    return g_signal_connect_data(
+        instance,
+        signal,
+        G_CALLBACK(+[](gpointer, gpointer user_data) { (*static_cast<Callback*>(user_data))(); }),
+        data,
+        [](gpointer user_data, GClosure*) { delete static_cast<Callback*>(user_data); },
+        GConnectFlags{});
+}
+
 // Replaces the model of an AdwComboRow with the given strings.
 inline void adw_compat_combo_row_set_strings(GtkWidget* row, std::vector<std::string> const& strings)
 {

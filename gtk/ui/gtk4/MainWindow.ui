@@ -2,7 +2,14 @@
 <interface domain="transmission-gtk">
   <requires lib="gtk" version="4.0"/>
   <requires lib="Adw" version="1.5"/>
-  <object class="AdwApplicationWindow" id="MainWindow"/>
+  <object class="AdwApplicationWindow" id="MainWindow">
+    <child>
+      <object class="AdwBreakpoint" id="narrow_breakpoint">
+        <condition>max-width: 500sp</condition>
+        <setter object="statistics_label" property="visible">False</setter>
+      </object>
+    </child>
+  </object>
     <object class="AdwToolbarView" id="toolbar_view">
       <child type="top">
         <object class="AdwHeaderBar" id="header_bar">

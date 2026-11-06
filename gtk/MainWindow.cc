@@ -105,6 +105,7 @@ public:
 
 private:
     void init_view(TorrentView* view, Glib::RefPtr<FilterBar::Model> const& model);
+    void update_item_factory();
 
     Glib::RefPtr<Gio::MenuModel> createOptionsMenu();
     Glib::RefPtr<Gio::MenuModel> createSpeedMenu(Glib::RefPtr<Gio::SimpleActionGroup> const& actions, tr_direction dir);
@@ -147,6 +148,11 @@ private:
     Glib::RefPtr<Gtk::ListItemFactory> item_factory_compact_;
     Glib::RefPtr<Gtk::ListItemFactory> item_factory_full_;
     Glib::RefPtr<Gtk::MultiSelection> selection_;
+
+    // The "narrow_breakpoint" of MainWindow.ui. The list uses the compact rows while it applies.
+    GObject* narrow_breakpoint_ = nullptr; // owned reference, released in ~Impl()
+    std::array<gulong, 2> narrow_handler_ids_ = {};
+    bool narrow_ = false;
 
     Gtk::ScrolledWindow* scroll_ = nullptr;
     GtkWidget* toast_overlay_ = nullptr; // owned by the window
@@ -249,7 +255,7 @@ void MainWindow::Impl::init_view(TorrentView* view, Glib::RefPtr<FilterBar::Mode
     selection_->signal_selection_changed().connect([this](guint /*position*/, guint /*n_items*/)
                                                    { signal_selection_changed_.emit(); });
 
-    view->set_factory(gtr_pref_flag_get(TR_KEY_compact_view) ? item_factory_compact_ : item_factory_full_);
+    update_item_factory();
     view->set_model(selection_);
 
     setup_item_view_button_event_handling(
@@ -266,12 +272,18 @@ void MainWindow::Impl::init_view(TorrentView* view, Glib::RefPtr<FilterBar::Mode
         [view](double view_x, double view_y) { return on_item_view_button_released(*view, view_x, view_y); });
 }
 
+void MainWindow::Impl::update_item_factory()
+{
+    bool const compact = narrow_ || gtr_pref_flag_get(TR_KEY_compact_view);
+    view_->set_factory(compact ? item_factory_compact_ : item_factory_full_);
+}
+
 void MainWindow::Impl::prefsChanged(tr_quark const key)
 {
     switch (key)
     {
     case TR_KEY_compact_view:
-        view_->set_factory(gtr_pref_flag_get(key) ? item_factory_compact_ : item_factory_full_);
+        update_item_factory();
         break;
 
     case TR_KEY_show_statusbar:
@@ -304,6 +316,15 @@ void MainWindow::Impl::prefsChanged(tr_quark const key)
 MainWindow::Impl::~Impl()
 {
     pref_handler_id_.disconnect();
+
+    if (narrow_breakpoint_ != nullptr)
+    {
+        for (auto const handler_id : narrow_handler_ids_)
+        {
+            g_signal_handler_disconnect(narrow_breakpoint_, handler_id);
+        }
+        g_object_unref(narrow_breakpoint_);
+    }
 }
 
 void MainWindow::Impl::syncAltSpeedButton()
@@ -682,6 +703,29 @@ MainWindow::Impl::Impl(
     **/
 
     init_view(view_, filter_->get_filter_model());
+
+    /* a narrow window shows the compact rows, whatever the preference says */
+    narrow_breakpoint_ = gtk_builder_get_object(builder->gobj(), "narrow_breakpoint");
+    if (narrow_breakpoint_ != nullptr)
+    {
+        g_object_ref(narrow_breakpoint_);
+        narrow_handler_ids_[0] = adw_compat_connect_void_signal(
+            narrow_breakpoint_,
+            "apply",
+            [this]()
+            {
+                narrow_ = true;
+                update_item_factory();
+            });
+        narrow_handler_ids_[1] = adw_compat_connect_void_signal(
+            narrow_breakpoint_,
+            "unapply",
+            [this]()
+            {
+                narrow_ = false;
+                update_item_factory();
+            });
+    }
 
     {
         /* this is to determine the maximum width/height for the label */
