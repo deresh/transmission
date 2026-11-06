@@ -21,6 +21,7 @@
 #include "RelocateDialog.h"
 #include "Session.h"
 #include "StatsDialog.h"
+#include "StatusNotifierItem.h"
 #include "Torrent.h"
 #include "Utils.h"
 
@@ -158,6 +159,7 @@ private:
     void rowChangedCB(std::unordered_set<tr_torrent_id_t> const& torrent_ids, Torrent::ChangeFlags changes);
 
     void app_setup();
+    void update_tray_icon();
     void main_window_setup();
 
     bool on_session_closed();
@@ -203,6 +205,7 @@ private:
     Glib::RefPtr<Session> core_;
     std::unique_ptr<MessageLogWindow> msgwin_;
     std::unique_ptr<PrefsDialog> prefs_;
+    std::unique_ptr<StatusNotifierItem> tray_;
     std::vector<std::string> error_list_;
     std::vector<std::string> duplicates_list_;
     std::map<std::string, std::unique_ptr<DetailsDialog>> details_;
@@ -718,6 +721,9 @@ void Application::Impl::app_setup()
     /* set up main window */
     main_window_setup();
 
+    /* set up the tray icon */
+    update_tray_icon();
+
     /* start model update timer */
     timer_ = Glib::signal_timeout().connect_seconds(
         sigc::mem_fun(*this, &Impl::update_model_loop),
@@ -1001,6 +1007,18 @@ void Application::Impl::on_add_torrent(tr_ctor* ctor)
     adw_compat_dialog_present(GTK_WIDGET(w->gobj()), GTK_WIDGET(wind_->gobj()));
 }
 
+void Application::Impl::update_tray_icon()
+{
+    if (!gtr_pref_flag_get(TR_KEY_show_notification_area_icon))
+    {
+        tray_.reset();
+    }
+    else if (!tray_)
+    {
+        tray_ = std::make_unique<StatusNotifierItem>([]() { gtr_action_activate("toggle-main-window"); });
+    }
+}
+
 void Application::Impl::on_prefs_changed(tr_quark const key)
 {
     g_return_if_fail(gtr_pref_has_key(key));
@@ -1187,6 +1205,10 @@ void Application::Impl::on_prefs_changed(tr_quark const key)
 
     case TR_KEY_script_torrent_done_seeding_filename:
         tr_sessionSetScript(tr, TR_SCRIPT_ON_TORRENT_DONE_SEEDING, gtr_pref_string_get(key));
+        break;
+
+    case TR_KEY_show_notification_area_icon:
+        update_tray_icon();
         break;
 
     case TR_KEY_start_added_torrents:
