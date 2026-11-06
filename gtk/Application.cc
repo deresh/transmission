@@ -1377,9 +1377,9 @@ void Application::Impl::actions_handler(Glib::ustring const& action_name)
     }
     else if (action_name == "show-stats")
     {
-        auto dialog = std::shared_ptr<StatsDialog>(StatsDialog::create(*wind_, core_));
-        gtr_window_on_close(*dialog, [dialog]() mutable { dialog.reset(); });
-        dialog->show();
+        auto dialog = std::shared_ptr<StatsDialog>(StatsDialog::create(core_));
+        adw_compat_dialog_on_closed(GTK_WIDGET(dialog->gobj()), [dialog]() mutable { dialog.reset(); });
+        adw_compat_dialog_present(GTK_WIDGET(dialog->gobj()), GTK_WIDGET(wind_->gobj()));
     }
     else if (action_name == "donate")
     {

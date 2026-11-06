@@ -7,28 +7,23 @@
 
 #include <glibmm/refptr.h>
 #include <gtkmm/builder.h>
-#include <gtkmm/dialog.h>
-#include <gtkmm/window.h>
+#include <gtkmm/widget.h>
 
 #include <memory>
 
 class Session;
 
-class StatsDialog : public Gtk::Dialog
+class StatsDialog : public Gtk::Widget
 {
 public:
-    StatsDialog(
-        BaseObjectType* cast_item,
-        Glib::RefPtr<Gtk::Builder> const& builder,
-        Gtk::Window& parent,
-        Glib::RefPtr<Session> const& core);
+    StatsDialog(BaseObjectType* cast_item, Glib::RefPtr<Gtk::Builder> const& builder, Glib::RefPtr<Session> const& core);
     StatsDialog(StatsDialog&&) = delete;
     StatsDialog(StatsDialog const&) = delete;
     StatsDialog& operator=(StatsDialog&&) = delete;
     StatsDialog& operator=(StatsDialog const&) = delete;
     ~StatsDialog() override;
 
-    static std::unique_ptr<StatsDialog> create(Gtk::Window& parent, Glib::RefPtr<Session> const& core);
+    static std::unique_ptr<StatsDialog> create(Glib::RefPtr<Session> const& core);
 
 private:
     class Impl;
