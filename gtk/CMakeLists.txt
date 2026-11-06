@@ -103,19 +103,22 @@ tr_target_glib_resources(${TR_NAME}-gtk
     transmission.gresource.xml
     ${UI_SUBDIR}/transmission-ui.gresource.xml)
 
+# Application ID; the desktop file and metainfo are named after it.
+set(APP_ID com.transmissionbt.TransmissionAdw)
+
 if(ENABLE_NLS)
-    set(DESKTOP_FILE "${CMAKE_CURRENT_BINARY_DIR}/${TR_NAME}-gtk.desktop")
+    set(DESKTOP_FILE "${CMAKE_CURRENT_BINARY_DIR}/${APP_ID}.desktop")
     tr_gettext_msgfmt(${TR_NAME}-gtk
         ${DESKTOP_FILE}
-        ${CMAKE_CURRENT_SOURCE_DIR}/transmission-gtk.desktop.in)
+        ${CMAKE_CURRENT_SOURCE_DIR}/${APP_ID}.desktop.in)
     target_sources(${TR_NAME}-gtk
         PRIVATE
             ${DESKTOP_FILE})
 
-    set(METAINFO_FILE "${CMAKE_CURRENT_BINARY_DIR}/${TR_NAME}-gtk.metainfo.xml")
+    set(METAINFO_FILE "${CMAKE_CURRENT_BINARY_DIR}/${APP_ID}.metainfo.xml")
     tr_gettext_msgfmt(${TR_NAME}-gtk
         ${METAINFO_FILE}
-        ${CMAKE_CURRENT_SOURCE_DIR}/transmission-gtk.metainfo.xml.in)
+        ${CMAKE_CURRENT_SOURCE_DIR}/${APP_ID}.metainfo.xml.in)
     target_sources(${TR_NAME}-gtk
         PRIVATE
             ${METAINFO_FILE})
@@ -180,15 +183,18 @@ if(INSTALL_DOC)
 endif()
 
 if(ENABLE_NLS)
-    install(
-        FILES ${DESKTOP_FILE}
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
-    install(
-        FILES ${METAINFO_FILE}
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo)
+    set(DESKTOP_INSTALL_FILE ${DESKTOP_FILE})
+    set(METAINFO_INSTALL_FILE ${METAINFO_FILE})
 else()
-    install(
-        FILES transmission-gtk.desktop.in
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
-        RENAME ${TR_NAME}-gtk.desktop)
+    set(DESKTOP_INSTALL_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${APP_ID}.desktop.in)
+    set(METAINFO_INSTALL_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${APP_ID}.metainfo.xml.in)
 endif()
+
+install(
+    FILES ${DESKTOP_INSTALL_FILE}
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+    RENAME ${APP_ID}.desktop)
+install(
+    FILES ${METAINFO_INSTALL_FILE}
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo
+    RENAME ${APP_ID}.metainfo.xml)
