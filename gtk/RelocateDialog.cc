@@ -15,8 +15,8 @@
 #include <glibmm/i18n.h>
 #include <glibmm/main.h>
 #include <glibmm/ustring.h>
+#include <gtkmm/button.h>
 #include <gtkmm/checkbutton.h>
-#include <gtkmm/messagedialog.h>
 
 #include <fmt/format.h>
 
@@ -45,13 +45,15 @@ public:
     ~Impl();
 
 private:
-    void onResponse(int response);
+    void onApply();
     bool onTimer();
 
     void startMovingNextTorrent();
 
 private:
     RelocateDialog& dialog_;
+    /* keeps the builder's widgets alive for as long as the dialog exists */
+    Glib::RefPtr<Gtk::Builder> const builder_;
     Glib::RefPtr<Session> const core_;
     std::vector<tr_torrent_id_t> torrent_ids_;
 
@@ -104,7 +106,7 @@ bool RelocateDialog::Impl::onTimer()
             progress_dialog_ = nullptr;
         }
 
-        gtr_show_error(dialog_, _("Couldn't move torrent"), {}, [this]() { dialog_.close(); });
+        gtr_show_error(dialog_, _("Couldn't move torrent"), {}, [this]() { adw_dialog_close(ADW_DIALOG(dialog_.gobj())); });
         return false;
     }
 
@@ -121,7 +123,7 @@ bool RelocateDialog::Impl::onTimer()
                 adw_dialog_force_close(ADW_DIALOG(progress_dialog_));
                 progress_dialog_ = nullptr;
             }
-            dialog_.close();
+            adw_dialog_close(ADW_DIALOG(dialog_.gobj()));
             return false;
         }
     }
@@ -129,59 +131,49 @@ bool RelocateDialog::Impl::onTimer()
     return true;
 }
 
-void RelocateDialog::Impl::onResponse(int response)
+void RelocateDialog::Impl::onApply()
 {
-    if (response == Gtk::ResponseType::APPLY)
-    {
-        auto const location = chooser_->get_filename();
+    auto const location = chooser_->get_filename();
 
-        do_move_ = move_tb_->get_active();
+    do_move_ = move_tb_->get_active();
 
-        /* pop up a dialog saying that the work is in progress */
-        progress_dialog_ = adw_compat_alert_dialog_new(nullptr, _("This may take a moment…"));
-        adw_compat_alert_add_response(progress_dialog_, "close", _("Close"));
-        adw_alert_dialog_set_response_enabled(ADW_ALERT_DIALOG(progress_dialog_), "close", FALSE);
-        adw_compat_dialog_present(progress_dialog_, GTK_WIDGET(dialog_.gobj()));
+    /* pop up a dialog saying that the work is in progress */
+    progress_dialog_ = adw_compat_alert_dialog_new(nullptr, _("This may take a moment…"));
+    adw_compat_alert_add_response(progress_dialog_, "close", _("Close"));
+    adw_alert_dialog_set_response_enabled(ADW_ALERT_DIALOG(progress_dialog_), "close", FALSE);
+    adw_compat_dialog_present(progress_dialog_, GTK_WIDGET(dialog_.gobj()));
 
-        /* remember this location for the next torrent */
-        targetLocation = location;
+    /* remember this location for the next torrent */
+    targetLocation = location;
 
-        /* remember this location so that it can be the default next time */
-        gtr_save_recent_dir("relocate", core_, location);
+    /* remember this location so that it can be the default next time */
+    gtr_save_recent_dir("relocate", core_, location);
 
-        /* start the move and periodically check its status */
-        done_ = TR_LOC_DONE;
-        timer_ = Glib::signal_timeout().connect_seconds(sigc::mem_fun(*this, &Impl::onTimer), 1);
-        onTimer();
-    }
-    else
-    {
-        dialog_.close();
-    }
+    /* start the move and periodically check its status */
+    done_ = TR_LOC_DONE;
+    timer_ = Glib::signal_timeout().connect_seconds(sigc::mem_fun(*this, &Impl::onTimer), 1);
+    onTimer();
 }
 
 RelocateDialog::RelocateDialog(
     BaseObjectType* cast_item,
     Glib::RefPtr<Gtk::Builder> const& builder,
-    Gtk::Window& parent,
     Glib::RefPtr<Session> const& core,
     std::vector<int> const& torrent_ids)
-    : Gtk::Dialog(cast_item)
+    : Gtk::Widget(cast_item)
     , impl_(std::make_unique<Impl>(*this, builder, core, torrent_ids))
 {
-    set_transient_for(parent);
 }
 
 RelocateDialog::~RelocateDialog() = default;
 
 std::unique_ptr<RelocateDialog> RelocateDialog::create(
-    Gtk::Window& parent,
     Glib::RefPtr<Session> const& core,
     std::vector<tr_torrent_id_t> const& torrent_ids)
 {
     auto const builder = Gtk::Builder::create_from_resource(gtr_get_full_resource_path("RelocateDialog.ui"));
     return std::unique_ptr<RelocateDialog>(
-        gtr_get_widget_derived<RelocateDialog>(builder, "RelocateDialog", parent, core, torrent_ids));
+        gtr_get_widget_derived<RelocateDialog>(builder, "RelocateDialog", core, torrent_ids));
 }
 
 RelocateDialog::Impl::Impl(
@@ -190,13 +182,16 @@ RelocateDialog::Impl::Impl(
     Glib::RefPtr<Session> const& core,
     std::vector<tr_torrent_id_t> const& torrent_ids)
     : dialog_(dialog)
+    , builder_(builder)
     , core_(core)
     , torrent_ids_(torrent_ids)
     , chooser_(gtr_get_widget_derived<PathButton>(builder, "new_location_button"))
     , move_tb_(gtr_get_widget<Gtk::CheckButton>(builder, "move_data_radio"))
 {
-    dialog_.set_default_response(Gtk::ResponseType::CANCEL);
-    dialog_.signal_response().connect(sigc::mem_fun(*this, &Impl::onResponse));
+    gtr_get_widget<Gtk::Button>(builder, "apply_button")->signal_clicked().connect([this]() { onApply(); });
+    gtr_get_widget<Gtk::Button>(builder, "cancel_button")
+        ->signal_clicked()
+        .connect([this]() { adw_dialog_close(ADW_DIALOG(dialog_.gobj())); });
 
     auto recent_dirs = gtr_get_recent_dirs("relocate");
     if (recent_dirs.empty())

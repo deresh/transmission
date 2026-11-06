@@ -284,7 +284,7 @@ void gtr_add_torrent_error_dialog(Gtk::Widget& child, tr_torrent* duplicate_torr
 }
 
 void gtr_show_error(
-    Gtk::Window& parent,
+    Gtk::Widget& parent,
     Glib::ustring const& heading,
     Glib::ustring const& body,
     std::function<void()> on_closed)

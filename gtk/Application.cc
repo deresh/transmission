@@ -1404,9 +1404,9 @@ void Application::Impl::actions_handler(Glib::ustring const& action_name)
 
         if (!ids.empty())
         {
-            auto w = std::shared_ptr<RelocateDialog>(RelocateDialog::create(*wind_, core_, ids));
-            gtr_window_on_close(*w, [w]() mutable { w.reset(); });
-            w->show();
+            auto w = std::shared_ptr<RelocateDialog>(RelocateDialog::create(core_, ids));
+            adw_compat_dialog_on_closed(GTK_WIDGET(w->gobj()), [w]() mutable { w.reset(); });
+            adw_compat_dialog_present(GTK_WIDGET(w->gobj()), GTK_WIDGET(wind_->gobj()));
         }
     }
     else if (auto const method = action_name_to_torrent_rpc_method(action_name.raw()))

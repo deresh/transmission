@@ -9,21 +9,19 @@
 
 #include <glibmm/refptr.h>
 #include <gtkmm/builder.h>
-#include <gtkmm/dialog.h>
-#include <gtkmm/window.h>
+#include <gtkmm/widget.h>
 
 #include <memory>
 #include <vector>
 
 class Session;
 
-class RelocateDialog : public Gtk::Dialog
+class RelocateDialog : public Gtk::Widget
 {
 public:
     RelocateDialog(
         BaseObjectType* cast_item,
         Glib::RefPtr<Gtk::Builder> const& builder,
-        Gtk::Window& parent,
         Glib::RefPtr<Session> const& core,
         std::vector<tr_torrent_id_t> const& torrent_ids);
     RelocateDialog(RelocateDialog&&) = delete;
@@ -33,7 +31,6 @@ public:
     ~RelocateDialog() override;
 
     static std::unique_ptr<RelocateDialog> create(
-        Gtk::Window& parent,
         Glib::RefPtr<Session> const& core,
         std::vector<tr_torrent_id_t> const& torrent_ids);
 
