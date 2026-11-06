@@ -5,7 +5,6 @@
 #include "AdwCompat.h"
 #include "Application.h"
 #include "GtkCompat.h"
-#include "Notify.h"
 #include "Prefs.h"
 #include "Utils.h"
 
@@ -147,9 +146,6 @@ int main(int argc, char** argv)
 
     gtr_pref_init(config_dir);
     g_mkdir_with_parents(config_dir.c_str(), 0755);
-
-    /* init notifications */
-    gtr_notify_init();
 
     /* init the application for the specified config dir */
     return Application(config_dir, start_paused, start_iconified).run(argc, argv);
