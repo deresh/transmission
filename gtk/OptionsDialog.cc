@@ -65,10 +65,12 @@ private:
     void removeOldTorrent();
     void updateTorrent();
 
-    void addResponseCB(int response);
+    void onOpen();
 
 private:
     OptionsDialog& dialog_;
+    /* keeps the builder's widgets alive for as long as the dialog exists */
+    Glib::RefPtr<Gtk::Builder> const ui_builder_;
     Glib::RefPtr<Session> const core_;
     std::unique_ptr<tr_ctor, void (*)(tr_ctor*)> ctor_;
 
@@ -98,9 +100,9 @@ void OptionsDialog::Impl::removeOldTorrent()
     }
 }
 
-void OptionsDialog::Impl::addResponseCB(int response)
+void OptionsDialog::Impl::onOpen()
 {
-    if (tor_ != nullptr && response == Gtk::ResponseType::ACCEPT)
+    if (tor_ != nullptr)
     {
         tr_torrentSetPriority(tor_, static_cast<tr_priority_t>(gtr_combo_box_get_active_enum(*priority_combo_)));
 
@@ -121,7 +123,7 @@ void OptionsDialog::Impl::addResponseCB(int response)
         tor_ = nullptr;
     }
 
-    dialog_.close();
+    adw_dialog_close(ADW_DIALOG(dialog_.gobj()));
 }
 
 void OptionsDialog::Impl::updateTorrent()
@@ -224,25 +226,22 @@ void addTorrentFilters(FileChooserT* chooser)
 OptionsDialog::OptionsDialog(
     BaseObjectType* cast_item,
     Glib::RefPtr<Gtk::Builder> const& builder,
-    Gtk::Window& parent,
     Glib::RefPtr<Session> const& core,
     std::unique_ptr<tr_ctor, void (*)(tr_ctor*)> ctor)
-    : Gtk::Dialog(cast_item)
+    : Gtk::Widget(cast_item)
     , impl_(std::make_unique<Impl>(*this, builder, core, std::move(ctor)))
 {
-    set_transient_for(parent);
 }
 
 OptionsDialog::~OptionsDialog() = default;
 
 std::unique_ptr<OptionsDialog> OptionsDialog::create(
-    Gtk::Window& parent,
     Glib::RefPtr<Session> const& core,
     std::unique_ptr<tr_ctor, void (*)(tr_ctor*)> ctor)
 {
     auto const builder = Gtk::Builder::create_from_resource(gtr_get_full_resource_path("OptionsDialog.ui"));
     return std::unique_ptr<OptionsDialog>(
-        gtr_get_widget_derived<OptionsDialog>(builder, "OptionsDialog", parent, core, std::move(ctor)));
+        gtr_get_widget_derived<OptionsDialog>(builder, "OptionsDialog", core, std::move(ctor)));
 }
 
 OptionsDialog::Impl::Impl(
@@ -251,6 +250,7 @@ OptionsDialog::Impl::Impl(
     Glib::RefPtr<Session> const& core,
     std::unique_ptr<tr_ctor, void (*)(tr_ctor*)> ctor)
     : dialog_(dialog)
+    , ui_builder_(builder)
     , core_(core)
     , ctor_(std::move(ctor))
     , filename_{ tr_ctorGetSourceFile(ctor_.get()).value_or(""s) }
@@ -261,8 +261,10 @@ OptionsDialog::Impl::Impl(
     , priority_combo_(gtr_get_widget<Gtk::ComboBox>(builder, "priority_combo"))
     , freespace_label_(gtr_get_widget_derived<FreeSpaceLabel>(builder, "free_space_label", core_, downloadDir_))
 {
-    dialog_.set_default_response(Gtk::ResponseType::ACCEPT);
-    dialog.signal_response().connect(sigc::mem_fun(*this, &Impl::addResponseCB));
+    gtr_get_widget<Gtk::Button>(builder, "open_button")->signal_clicked().connect([this]() { onOpen(); });
+    gtr_get_widget<Gtk::Button>(builder, "cancel_button")
+        ->signal_clicked()
+        .connect([this]() { adw_dialog_close(ADW_DIALOG(dialog_.gobj())); });
 
     gtr_priority_combo_init(*priority_combo_);
     gtr_combo_box_set_active_enum(*priority_combo_, TR_PRI_NORMAL);
@@ -304,7 +306,7 @@ OptionsDialog::Impl::Impl(
         sourceChanged(source_chooser);
     }
 
-    dialog_.get_widget_for_response(Gtk::ResponseType::ACCEPT)->grab_focus();
+    gtr_get_widget<Gtk::Button>(builder, "open_button")->grab_focus();
 }
 
 /****

@@ -982,9 +982,9 @@ void Application::Impl::on_main_window_focus_in()
 void Application::Impl::on_add_torrent(tr_ctor* ctor)
 {
     auto w = std::shared_ptr<OptionsDialog>(
-        OptionsDialog::create(*wind_, core_, std::unique_ptr<tr_ctor, decltype(&tr_ctorFree)>(ctor, &tr_ctorFree)));
+        OptionsDialog::create(core_, std::unique_ptr<tr_ctor, decltype(&tr_ctorFree)>(ctor, &tr_ctorFree)));
 
-    gtr_window_on_close(*w, [w]() mutable { w.reset(); });
+    adw_compat_dialog_on_closed(GTK_WIDGET(w->gobj()), [w]() mutable { w.reset(); });
 
     auto focus_controller = Gtk::EventControllerFocus::create();
     focus_controller->signal_enter().connect(sigc::mem_fun(*this, &Impl::on_main_window_focus_in));
@@ -995,7 +995,7 @@ void Application::Impl::on_add_torrent(tr_ctor* ctor)
         gtr_window_set_urgency_hint(*wind_, true);
     }
 
-    w->show();
+    adw_compat_dialog_present(GTK_WIDGET(w->gobj()), GTK_WIDGET(wind_->gobj()));
 }
 
 void Application::Impl::on_prefs_changed(tr_quark const key)

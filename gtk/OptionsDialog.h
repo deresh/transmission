@@ -59,13 +59,12 @@ private:
     void onOpenDialogResponse(int response, Glib::RefPtr<Session> const& core);
 };
 
-class OptionsDialog : public Gtk::Dialog
+class OptionsDialog : public Gtk::Widget
 {
 public:
     OptionsDialog(
         BaseObjectType* cast_item,
         Glib::RefPtr<Gtk::Builder> const& builder,
-        Gtk::Window& parent,
         Glib::RefPtr<Session> const& core,
         std::unique_ptr<tr_ctor, void (*)(tr_ctor*)> ctor);
     OptionsDialog(OptionsDialog&&) = delete;
@@ -75,7 +74,6 @@ public:
     ~OptionsDialog() override;
 
     static std::unique_ptr<OptionsDialog> create(
-        Gtk::Window& parent,
         Glib::RefPtr<Session> const& core,
         std::unique_ptr<tr_ctor, void (*)(tr_ctor*)> ctor);
 
