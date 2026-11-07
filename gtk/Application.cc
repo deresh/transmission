@@ -116,7 +116,7 @@ char const* const LICENSE =
 class Application::Impl
 {
 public:
-    Impl(Application& app, std::string const& config_dir, bool start_paused, bool start_iconified);
+    Impl(Application& app, std::string const& config_dir, bool start_paused);
     Impl(Impl&&) = delete;
     Impl(Impl const&) = delete;
     Impl& operator=(Impl&&) = delete;
@@ -194,7 +194,6 @@ private:
 
     std::string const config_dir_;
     bool const start_paused_;
-    bool const start_iconified_;
     bool is_iconified_ = false;
     bool is_closing_ = false;
 
@@ -708,19 +707,18 @@ constexpr char const* ApplicationId = "com.transmissionbt.TransmissionAdw";
 
 } // namespace
 
-Application::Application(std::string const& config_dir, bool start_paused, bool start_iconified)
+Application::Application(std::string const& config_dir, bool start_paused)
     : Gtk::Application(ApplicationId, Gio::Application::Flags::HANDLES_OPEN)
-    , impl_(std::make_unique<Impl>(*this, config_dir, start_paused, start_iconified))
+    , impl_(std::make_unique<Impl>(*this, config_dir, start_paused))
 {
 }
 
 Application::~Application() = default;
 
-Application::Impl::Impl(Application& app, std::string const& config_dir, bool start_paused, bool start_iconified)
+Application::Impl::Impl(Application& app, std::string const& config_dir, bool start_paused)
     : app_(app)
     , config_dir_(config_dir)
     , start_paused_(start_paused)
-    , start_iconified_(start_iconified)
 {
 }
 

@@ -16,7 +16,7 @@
 class Application : public Gtk::Application
 {
 public:
-    Application(std::string const& config_dir, bool start_paused, bool start_iconified);
+    Application(std::string const& config_dir, bool start_paused);
     Application(Application&&) = delete;
     Application(Application const&) = delete;
     Application& operator=(Application&&) = delete;
