@@ -160,6 +160,7 @@ private:
 
     void app_setup();
     void update_tray_icon();
+    void on_tray_exported(bool exported);
     void main_window_setup();
 
     bool on_session_closed();
@@ -194,6 +195,8 @@ private:
     bool const start_iconified_;
     bool is_iconified_ = false;
     bool is_closing_ = false;
+    /* --minimized: the window stays unshown until the tray icon reports whether it was exported */
+    bool awaiting_tray_result_ = false;
 
     Glib::RefPtr<Gtk::Builder> ui_builder_;
 
@@ -645,7 +648,8 @@ void Application::Impl::on_activate()
 
     /* GApplication emits an 'activate' signal when bootstrapping the primary.
      * Ordinarily we handle that by presenting the main window, but if the user
-     * started Transmission minimized, ignore that initial signal... */
+     * started Transmission minimized, ignore that initial signal. Whether the
+     * window stays hidden is decided by on_tray_exported(). */
     if (start_iconified_ && activation_count_ == 1)
     {
         return;
@@ -721,7 +725,8 @@ void Application::Impl::app_setup()
     /* set up main window */
     main_window_setup();
 
-    /* set up the tray icon */
+    /* set up the tray icon. --minimized waits for its answer before showing or hiding the window */
+    awaiting_tray_result_ = start_iconified_;
     update_tray_icon();
 
     /* start model update timer */
@@ -730,7 +735,7 @@ void Application::Impl::app_setup()
         MAIN_WINDOW_REFRESH_INTERVAL_SECONDS);
     update_model_once();
 
-    /* either show the window or iconify it */
+    /* show the window, or leave it unshown for --minimized (see on_tray_exported) */
     if (!start_iconified_)
     {
         wind_->show();
@@ -1012,10 +1017,42 @@ void Application::Impl::update_tray_icon()
     if (!gtr_pref_flag_get(TR_KEY_show_notification_area_icon))
     {
         tray_.reset();
+
+        /* a hidden window can only be brought back from the tray icon */
+        if (is_iconified_ || awaiting_tray_result_)
+        {
+            awaiting_tray_result_ = false;
+            presentMainWindow();
+        }
     }
     else if (!tray_)
     {
-        tray_ = std::make_unique<StatusNotifierItem>([]() { gtr_action_activate("toggle-main-window"); });
+        tray_ = std::make_unique<StatusNotifierItem>(
+            []() { gtr_action_activate("toggle-main-window"); },
+            [this](bool const exported) { on_tray_exported(exported); });
+    }
+}
+
+void Application::Impl::on_tray_exported(bool const exported)
+{
+    if (awaiting_tray_result_)
+    {
+        /* the first answer decides the initial visibility of a --minimized start */
+        awaiting_tray_result_ = false;
+
+        if (exported)
+        {
+            hideMainWindow();
+        }
+        else
+        {
+            presentMainWindow();
+        }
+    }
+    else if (!exported && is_iconified_)
+    {
+        /* the icon went away while the window was hidden, so show the window */
+        presentMainWindow();
     }
 }
 

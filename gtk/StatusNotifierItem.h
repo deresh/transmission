@@ -17,12 +17,20 @@ public:
     // Called when the user activates the icon (left click).
     using ActivateFunc = std::function<void()>;
 
-    explicit StatusNotifierItem(ActivateFunc activate);
+    // Called each time the registration with a watcher is settled: true once
+    // the watcher accepted the item, false when there is no watcher, the
+    // registration was refused, or the watcher went away.
+    using ExportedFunc = std::function<void(bool exported)>;
+
+    StatusNotifierItem(ActivateFunc activate, ExportedFunc exported);
     StatusNotifierItem(StatusNotifierItem&&) = delete;
     StatusNotifierItem(StatusNotifierItem const&) = delete;
     StatusNotifierItem& operator=(StatusNotifierItem&&) = delete;
     StatusNotifierItem& operator=(StatusNotifierItem const&) = delete;
     ~StatusNotifierItem();
+
+    // True while a watcher has accepted the item.
+    [[nodiscard]] bool is_exported() const;
 
 private:
     class Impl;

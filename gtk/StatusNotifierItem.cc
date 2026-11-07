@@ -57,16 +57,21 @@ char const* const ItemIntrospectionXml = R"XML(
 class StatusNotifierItem::Impl
 {
 public:
-    explicit Impl(ActivateFunc activate);
+    Impl(ActivateFunc activate, ExportedFunc exported);
     Impl(Impl&&) = delete;
     Impl(Impl const&) = delete;
     Impl& operator=(Impl&&) = delete;
     Impl& operator=(Impl const&) = delete;
     ~Impl();
 
+    [[nodiscard]] bool is_exported() const;
+
 private:
     static void on_watcher_appeared(GDBusConnection* connection, gchar const* name, gchar const* owner, gpointer user_data);
     static void on_watcher_vanished(GDBusConnection* connection, gchar const* name, gpointer user_data);
+    static void on_registered(GObject* source, GAsyncResult* result, gpointer user_data);
+
+    void set_exported(bool exported);
 
     static void handle_method_call(
         GDBusConnection* connection,
@@ -86,11 +91,14 @@ private:
         GError** error,
         gpointer user_data);
 
-    void register_with_watcher(GDBusConnection* connection) const;
+    void register_with_watcher(GDBusConnection* connection);
 
     static GDBusInterfaceVTable const vtable;
 
     ActivateFunc activate_;
+    ExportedFunc exported_func_;
+    bool exported_ = false;
+    GCancellable* cancellable_ = nullptr;
     GDBusNodeInfo* node_info_ = nullptr;
     GDBusInterfaceInfo* interface_info_ = nullptr;
     guint watch_id_ = 0;
@@ -105,8 +113,10 @@ GDBusInterfaceVTable const StatusNotifierItem::Impl::vtable = {
     .padding = {},
 };
 
-StatusNotifierItem::Impl::Impl(ActivateFunc activate)
+StatusNotifierItem::Impl::Impl(ActivateFunc activate, ExportedFunc exported)
     : activate_(std::move(activate))
+    , exported_func_(std::move(exported))
+    , cancellable_(g_cancellable_new())
 {
     node_info_ = g_dbus_node_info_new_for_xml(ItemIntrospectionXml, nullptr);
     if (node_info_ == nullptr)
@@ -135,6 +145,11 @@ StatusNotifierItem::Impl::~Impl()
         g_bus_unwatch_name(watch_id_);
     }
 
+    // Cancelling makes a pending registration reply return without touching
+    // this object. The reply callback still runs, so it must not dereference user_data.
+    g_cancellable_cancel(cancellable_);
+    g_object_unref(cancellable_);
+
     if (connection_ != nullptr)
     {
         if (object_id_ != 0)
@@ -148,6 +163,21 @@ StatusNotifierItem::Impl::~Impl()
     if (node_info_ != nullptr)
     {
         g_dbus_node_info_unref(node_info_);
+    }
+}
+
+bool StatusNotifierItem::Impl::is_exported() const
+{
+    return exported_;
+}
+
+void StatusNotifierItem::Impl::set_exported(bool exported)
+{
+    exported_ = exported;
+
+    if (exported_func_)
+    {
+        exported_func_(exported);
     }
 }
 
@@ -174,6 +204,7 @@ void StatusNotifierItem::Impl::on_watcher_appeared(
         {
             g_warning("Couldn't export the StatusNotifierItem: %s", error->message);
             g_error_free(error);
+            self->set_exported(false);
             return;
         }
 
@@ -183,17 +214,18 @@ void StatusNotifierItem::Impl::on_watcher_appeared(
     self->register_with_watcher(connection);
 }
 
-void StatusNotifierItem::Impl::on_watcher_vanished(
-    GDBusConnection* /*connection*/,
-    gchar const* /*name*/,
-    gpointer /*user_data*/)
+void StatusNotifierItem::Impl::on_watcher_vanished(GDBusConnection* /*connection*/, gchar const* /*name*/, gpointer user_data)
 {
+    // Also runs once at startup when no watcher owns the name.
     g_debug("%s is not on the session bus, so no tray icon is shown", WatcherBusName);
+
+    static_cast<Impl*>(user_data)->set_exported(false);
 }
 
 // Registers by the connection's unique name. The watcher then calls
-// ItemObjectPath on that unique name.
-void StatusNotifierItem::Impl::register_with_watcher(GDBusConnection* connection) const
+// ItemObjectPath on that unique name. The result comes back asynchronously
+// through on_registered().
+void StatusNotifierItem::Impl::register_with_watcher(GDBusConnection* connection)
 {
     g_dbus_connection_call(
         connection,
@@ -205,9 +237,37 @@ void StatusNotifierItem::Impl::register_with_watcher(GDBusConnection* connection
         nullptr,
         G_DBUS_CALL_FLAGS_NONE,
         -1,
-        nullptr,
-        nullptr,
-        nullptr);
+        cancellable_,
+        &on_registered,
+        this);
+}
+
+void StatusNotifierItem::Impl::on_registered(GObject* source, GAsyncResult* result, gpointer user_data)
+{
+    GError* error = nullptr;
+    GVariant* const reply = g_dbus_connection_call_finish(G_DBUS_CONNECTION(source), result, &error);
+
+    if (error != nullptr && g_error_matches(error, G_IO_ERROR, G_IO_ERROR_CANCELLED) != FALSE)
+    {
+        // The item was destroyed. user_data is no longer valid.
+        g_error_free(error);
+        return;
+    }
+
+    if (reply != nullptr)
+    {
+        g_variant_unref(reply);
+    }
+
+    auto* const self = static_cast<Impl*>(user_data);
+
+    if (error != nullptr)
+    {
+        g_debug("Couldn't register the StatusNotifierItem with the watcher: %s", error->message);
+        g_error_free(error);
+    }
+
+    self->set_exported(reply != nullptr);
 }
 
 void StatusNotifierItem::Impl::handle_method_call(
@@ -269,9 +329,14 @@ GVariant* StatusNotifierItem::Impl::handle_get_property(
     return nullptr;
 }
 
-StatusNotifierItem::StatusNotifierItem(ActivateFunc activate)
-    : impl_(std::make_unique<Impl>(std::move(activate)))
+StatusNotifierItem::StatusNotifierItem(ActivateFunc activate, ExportedFunc exported)
+    : impl_(std::make_unique<Impl>(std::move(activate), std::move(exported)))
 {
 }
 
 StatusNotifierItem::~StatusNotifierItem() = default;
+
+bool StatusNotifierItem::is_exported() const
+{
+    return impl_->is_exported();
+}
