@@ -9,6 +9,15 @@
         <setter object="statistics_label" property="visible">False</setter>
       </object>
     </child>
+    <child>
+      <object class="AdwBreakpoint" id="header_breakpoint">
+        <condition>max-width: 600sp</condition>
+        <setter object="open_label" property="visible">False</setter>
+        <setter object="properties_label" property="visible">False</setter>
+        <setter object="start_torrent_button" property="label"></setter>
+        <setter object="pause_torrent_button" property="label"></setter>
+      </object>
+    </child>
   </object>
     <object class="AdwToolbarView" id="toolbar_view">
       <child type="top">
@@ -35,7 +44,7 @@ horizontal]]></property>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkLabel">
+                      <object class="GtkLabel" id="open_label">
                         <property name="label" translatable="yes">_Open</property>
                         <property name="single-line-mode">1</property>
                         <property name="use-underline">1</property>
@@ -97,7 +106,7 @@ horizontal]]></property>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkLabel">
+                      <object class="GtkLabel" id="properties_label">
                         <property name="label" translatable="yes">_Properties</property>
                         <property name="single-line-mode">1</property>
                         <property name="use-underline">1</property>
