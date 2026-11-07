@@ -1082,6 +1082,7 @@ void Application::Impl::update_tray_icon()
     {
         tray_ = std::make_unique<StatusNotifierItem>(
             []() { gtr_action_activate("toggle-main-window"); },
+            []() { gtr_action_activate("quit"); },
             [this](bool const exported) { on_tray_exported(exported); });
     }
 }

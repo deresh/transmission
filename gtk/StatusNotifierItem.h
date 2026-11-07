@@ -11,18 +11,25 @@
 // A tray icon that follows the StatusNotifierItem protocol, exported with GDBus.
 // It is shown by a StatusNotifierWatcher on the session bus (AppIndicator
 // extension, KDE Plasma, ...). Without a watcher it does nothing.
+//
+// The icon has a dbusmenu at /MenuBar with "Show Transmission", a separator
+// and "Quit". Left click still calls ActivateFunc.
 class StatusNotifierItem
 {
 public:
-    // Called when the user activates the icon (left click).
+    // Called when the user activates the icon (left click), and by the
+    // "Show Transmission" menu item.
     using ActivateFunc = std::function<void()>;
+
+    // Called by the "Quit" menu item.
+    using QuitFunc = std::function<void()>;
 
     // Called each time the registration with a watcher is settled: true once
     // the watcher accepted the item, false when there is no watcher, the
     // registration was refused, or the watcher went away.
     using ExportedFunc = std::function<void(bool exported)>;
 
-    StatusNotifierItem(ActivateFunc activate, ExportedFunc exported);
+    StatusNotifierItem(ActivateFunc activate, QuitFunc quit, ExportedFunc exported);
     StatusNotifierItem(StatusNotifierItem&&) = delete;
     StatusNotifierItem(StatusNotifierItem const&) = delete;
     StatusNotifierItem& operator=(StatusNotifierItem&&) = delete;
