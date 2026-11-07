@@ -841,7 +841,16 @@ void Application::Impl::toggleMainWindow()
 
 bool Application::Impl::winclose()
 {
-    on_app_exit();
+    /* With the tray icon on the bus, closing the window hides it to the tray,
+     * as the GTK3 status icon did. Without it there is no way back, so quit. */
+    if (tray_ != nullptr && tray_->is_exported())
+    {
+        gtr_action_activate("toggle-main-window");
+    }
+    else
+    {
+        on_app_exit();
+    }
 
     return true; /* don't propagate event further */
 }
