@@ -37,10 +37,12 @@
 #include <giomm/appinfo.h>
 #include <giomm/error.h>
 #include <giomm/menu.h>
+#include <giomm/simpleaction.h>
 #include <glibmm/i18n.h>
 #include <glibmm/main.h>
 #include <glibmm/miscutils.h>
 #include <glibmm/value.h>
+#include <glibmm/variant.h>
 #include <glibmm/vectorutils.h>
 #include <gtkmm/aboutdialog.h>
 #include <gtkmm/builder.h>
@@ -64,6 +66,7 @@
 #include <csignal>
 #include <cstdlib> // exit()
 #include <ctime>
+#include <functional>
 #include <iterator> // std::back_inserter
 #include <map>
 #include <memory>
@@ -125,6 +128,8 @@ public:
 
     void on_startup();
     void on_activate();
+
+    void add_notification_actions();
 
     void actions_handler(Glib::ustring const& action_name);
 
@@ -540,6 +545,44 @@ void Application::on_startup()
     impl_->on_startup();
 }
 
+void Application::Impl::add_notification_actions()
+{
+    // Notify.cc attaches these to GNotification buttons as "app.<name>", with the torrent ID as the target.
+    // The handlers mirror the buttons that the old org.freedesktop.Notifications code had.
+    auto const add = [this](std::string_view const name, std::function<void(tr_torrent * tor, tr_torrent_id_t id)> handler)
+    {
+        auto const action = Gio::SimpleAction::create(std::string(name), Glib::Variant<gint32>::variant_type());
+        action->signal_activate().connect(
+            [this, handler = std::move(handler)](Glib::VariantBase const& value)
+            {
+                if (core_ == nullptr)
+                {
+                    return;
+                }
+
+                auto const id = static_cast<tr_torrent_id_t>(
+                    Glib::VariantBase::cast_dynamic<Glib::Variant<gint32>>(value).get());
+                if (auto* const tor = core_->find_torrent(id); tor != nullptr)
+                {
+                    handler(tor, id);
+                }
+            });
+        app_.add_action(action);
+    };
+
+    add("open-file",
+        [this](tr_torrent* tor, tr_torrent_id_t /*id*/)
+        {
+            std::string_view const base_dir = tr_torrentGetDownloadDir(tor);
+            std::string_view const relative_path = tr_torrentFile(tor, 0).name;
+            gtr_open_file(base_dir, relative_path);
+        });
+
+    add("open-folder", [this](tr_torrent* /*tor*/, tr_torrent_id_t id) { core_->open_folder(id); });
+
+    add("start-now", [this](tr_torrent* /*tor*/, tr_torrent_id_t id) { core_->start_now(id); });
+}
+
 void Application::Impl::on_startup()
 {
     Gtk::IconTheme::get_for_display(Gdk::Display::get_default())->add_resource_path(gtr_get_full_resource_path("icons"s));
@@ -587,6 +630,7 @@ void Application::Impl::on_startup()
     /* init the ui manager */
     ui_builder_ = Gtk::Builder::create_from_resource(gtr_get_full_resource_path("transmission-ui.xml"s));
     auto const actions = gtr_actions_init(ui_builder_, this);
+    add_notification_actions();
 
     auto const main_menu = gtr_action_get_object<Gio::Menu>("main-window-menu");
 

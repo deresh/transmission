@@ -15,22 +15,34 @@
 #include <glibmm/refptr.h>
 #include <glibmm/spawn.h>
 #include <glibmm/ustring.h>
+#include <glibmm/variant.h>
 
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
+#include <optional>
 #include <string_view>
 
 namespace
 {
 
+// The action is the detailed action name, e.g. "app.start-now", that the shell activates on click.
+struct NotificationButton
+{
+    Glib::ustring label;
+    Glib::ustring action;
+};
+
 // Sends through the running Gio::Application, so the shell shows it under the
 // application ID. A notification with the same ID replaces the earlier one.
+// The button, if any, activates its app action with tor_id as the target.
 void send_torrent_notification(
     Glib::ustring const& id,
     Glib::ustring const& title,
     std::string const& torrent_name,
-    std::string_view category)
+    std::string_view category,
+    std::optional<NotificationButton> const& button,
+    tr_torrent_id_t tor_id)
 {
     auto const app = Gio::Application::get_default();
     if (!app)
@@ -44,6 +56,14 @@ void send_torrent_notification(
     if (!category.empty())
     {
         notification->set_category(std::string(category));
+    }
+
+    if (button)
+    {
+        notification->add_button_variant(
+            button->label,
+            button->action,
+            Glib::Variant<gint32>::create(static_cast<gint32>(tor_id)));
     }
 
     app->send_notification(id, notification);
@@ -84,7 +104,10 @@ void gtr_notify_torrent_completed(Glib::RefPtr<Session> const& core, tr_torrent_
     }
 
     auto const id = fmt::format("torrent-complete-{}", tr_torrentView(tor).hash_string);
-    send_torrent_notification(id, _("Torrent Complete"), tr_torrentName(tor), "transfer.complete");
+    auto const button = tr_torrentFileCount(tor) == 1 ?
+        NotificationButton{ .label = _("Open File"), .action = "app.open-file" } :
+        NotificationButton{ .label = _("Open Folder"), .action = "app.open-folder" };
+    send_torrent_notification(id, _("Torrent Complete"), tr_torrentName(tor), "transfer.complete", button, tor_id);
 }
 
 void gtr_notify_torrent_added(Glib::RefPtr<Session> const& core, tr_torrent_id_t tor_id)
@@ -101,5 +124,11 @@ void gtr_notify_torrent_added(Glib::RefPtr<Session> const& core, tr_torrent_id_t
     }
 
     auto const id = fmt::format("torrent-added-{}", tr_torrentView(tor).hash_string);
-    send_torrent_notification(id, _("Torrent Added"), tr_torrentName(tor), {});
+    send_torrent_notification(
+        id,
+        _("Torrent Added"),
+        tr_torrentName(tor),
+        {},
+        NotificationButton{ .label = _("Start Now"), .action = "app.start-now" },
+        tor_id);
 }
