@@ -34,7 +34,18 @@ inline GtkWidget* adw_compat_toast_overlay_new(GtkWidget* child)
 
 inline void adw_compat_toast_show(GtkWidget* overlay, char const* title)
 {
-    adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(overlay), adw_toast_new(title));
+    // A toast title is one line and does not wrap. A long torrent name without
+    // spaces makes the toast wider than a narrow window, which libadwaita reports
+    // as a warning, so cut the title to a fixed number of characters.
+    constexpr size_t max_chars = 48;
+    auto text = std::string(title);
+    if (g_utf8_strlen(text.c_str(), -1) > max_chars)
+    {
+        auto const* const cut = g_utf8_offset_to_pointer(text.c_str(), max_chars);
+        text = std::string(text.c_str(), static_cast<size_t>(cut - text.c_str())) + "…";
+    }
+
+    adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(overlay), adw_toast_new(text.c_str()));
 }
 
 // AdwApplicationWindow takes its content through this call; gtk_window_set_child()
