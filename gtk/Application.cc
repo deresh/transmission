@@ -799,6 +799,13 @@ void Application::Impl::placeWindowFromPrefs()
 
 void Application::Impl::presentMainWindow()
 {
+    if (is_closing_)
+    {
+        /* the window only shows the "Closing Connections" page now and its
+         * widgets are torn down soon after; showing it would leave a dead window */
+        return;
+    }
+
     gtr_action_set_toggled("toggle-main-window", true);
 
     if (is_iconified_)
