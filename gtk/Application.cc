@@ -21,7 +21,6 @@
 #include "RelocateDialog.h"
 #include "Session.h"
 #include "StatsDialog.h"
-#include "StatusNotifierItem.h"
 #include "Torrent.h"
 #include "Utils.h"
 
@@ -164,8 +163,6 @@ private:
     void rowChangedCB(std::unordered_set<tr_torrent_id_t> const& torrent_ids, Torrent::ChangeFlags changes);
 
     void app_setup();
-    void update_tray_icon();
-    void on_tray_exported(bool exported);
     void main_window_setup();
 
     bool on_session_closed();
@@ -200,12 +197,9 @@ private:
     bool const start_iconified_;
     bool is_iconified_ = false;
     bool is_closing_ = false;
-    /* --minimized: the window stays unshown until the tray icon reports whether it was exported */
-    bool awaiting_tray_result_ = false;
 
     Glib::RefPtr<Gtk::Builder> ui_builder_;
 
-    unsigned int activation_count_ = 0;
     sigc::connection timer_;
     sigc::connection update_model_soon_tag_;
     sigc::connection refresh_actions_tag_;
@@ -213,7 +207,6 @@ private:
     Glib::RefPtr<Session> core_;
     std::unique_ptr<MessageLogWindow> msgwin_;
     std::unique_ptr<PrefsDialog> prefs_;
-    std::unique_ptr<StatusNotifierItem> tray_;
     std::vector<std::string> error_list_;
     std::vector<std::string> duplicates_list_;
     std::map<std::string, std::unique_ptr<DetailsDialog>> details_;
@@ -688,17 +681,6 @@ void Application::on_activate()
 
 void Application::Impl::on_activate()
 {
-    activation_count_++;
-
-    /* GApplication emits an 'activate' signal when bootstrapping the primary.
-     * Ordinarily we handle that by presenting the main window, but if the user
-     * started Transmission minimized, ignore that initial signal. Whether the
-     * window stays hidden is decided by on_tray_exported(). */
-    if (start_iconified_ && activation_count_ == 1)
-    {
-        return;
-    }
-
     gtr_action_activate("present-main-window");
 }
 
@@ -749,11 +731,6 @@ void Application::Impl::on_core_busy(bool busy)
 
 void Application::Impl::app_setup()
 {
-    if (start_iconified_)
-    {
-        gtr_pref_flag_set(TR_KEY_show_notification_area_icon, true);
-    }
-
     gtr_actions_set_core(core_);
 
     /* set up core handlers */
@@ -769,27 +746,15 @@ void Application::Impl::app_setup()
     /* set up main window */
     main_window_setup();
 
-    /* set up the tray icon. --minimized waits for its answer before showing or hiding the window */
-    awaiting_tray_result_ = start_iconified_;
-    update_tray_icon();
-
     /* start model update timer */
     timer_ = Glib::signal_timeout().connect_seconds(
         sigc::mem_fun(*this, &Impl::update_model_loop),
         MAIN_WINDOW_REFRESH_INTERVAL_SECONDS);
     update_model_once();
 
-    /* show the window, or leave it unshown for --minimized (see on_tray_exported) */
-    if (!start_iconified_)
-    {
-        wind_->show();
-        gtr_action_set_toggled("toggle-main-window", true);
-    }
-    else
-    {
-        gtr_window_set_skip_taskbar_hint(*wind_, false);
-        gtr_action_set_toggled("toggle-main-window", false);
-    }
+    /* show the window. --minimized has no effect: there is no tray to hide it to */
+    wind_->show();
+    gtr_action_set_toggled("toggle-main-window", true);
 }
 
 void Application::Impl::placeWindowFromPrefs()
@@ -848,16 +813,7 @@ void Application::Impl::toggleMainWindow()
 
 bool Application::Impl::winclose()
 {
-    /* With the tray icon on the bus, closing the window hides it to the tray,
-     * as the GTK3 status icon did. Without it there is no way back, so quit. */
-    if (tray_ != nullptr && tray_->is_exported())
-    {
-        gtr_action_activate("toggle-main-window");
-    }
-    else
-    {
-        on_app_exit();
-    }
+    on_app_exit();
 
     return true; /* don't propagate event further */
 }
@@ -1072,51 +1028,6 @@ void Application::Impl::on_add_torrent(tr_ctor* ctor)
     adw_compat_dialog_present(GTK_WIDGET(w->gobj()), GTK_WIDGET(wind_->gobj()));
 }
 
-void Application::Impl::update_tray_icon()
-{
-    if (!gtr_pref_flag_get(TR_KEY_show_notification_area_icon))
-    {
-        tray_.reset();
-
-        /* a hidden window can only be brought back from the tray icon */
-        if (is_iconified_ || awaiting_tray_result_)
-        {
-            awaiting_tray_result_ = false;
-            presentMainWindow();
-        }
-    }
-    else if (!tray_)
-    {
-        tray_ = std::make_unique<StatusNotifierItem>(
-            []() { gtr_action_activate("toggle-main-window"); },
-            []() { gtr_action_activate("quit"); },
-            [this](bool const exported) { on_tray_exported(exported); });
-    }
-}
-
-void Application::Impl::on_tray_exported(bool const exported)
-{
-    if (awaiting_tray_result_)
-    {
-        /* the first answer decides the initial visibility of a --minimized start */
-        awaiting_tray_result_ = false;
-
-        if (exported)
-        {
-            hideMainWindow();
-        }
-        else
-        {
-            presentMainWindow();
-        }
-    }
-    else if (!exported && is_iconified_)
-    {
-        /* the icon went away while the window was hidden, so show the window */
-        presentMainWindow();
-    }
-}
-
 void Application::Impl::on_prefs_changed(tr_quark const key)
 {
     g_return_if_fail(gtr_pref_has_key(key));
@@ -1303,10 +1214,6 @@ void Application::Impl::on_prefs_changed(tr_quark const key)
 
     case TR_KEY_script_torrent_done_seeding_filename:
         tr_sessionSetScript(tr, TR_SCRIPT_ON_TORRENT_DONE_SEEDING, gtr_pref_string_get(key));
-        break;
-
-    case TR_KEY_show_notification_area_icon:
-        update_tray_icon();
         break;
 
     case TR_KEY_start_added_torrents:

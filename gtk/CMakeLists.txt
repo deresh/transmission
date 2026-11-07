@@ -65,8 +65,6 @@ target_sources(${TR_NAME}-gtk
         SortListModel.hh
         StatsDialog.cc
         StatsDialog.h
-        StatusNotifierItem.cc
-        StatusNotifierItem.h
         Torrent.cc
         Torrent.h
         TorrentFilter.cc
